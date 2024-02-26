@@ -61,7 +61,4 @@ public record TerraformPlanOptions : TerraformOptions
 
     [BooleanCommandSwitch("-state")]
     public bool? State { get; set; }
-
-    [BooleanCommandSwitch("-chdir")]
-    public bool? Chdir { get; set; }
 }

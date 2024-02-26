@@ -5,14 +5,8 @@ namespace ModularPipelines.Terraform.Options;
 
 [CommandPrecedingArguments("show")]
 [ExcludeFromCodeCoverage]
-public record TerraformShowOptions : TerraformOptions
+public record TerraformShowOptions : TerraformPrintedOptions
 {
-    [BooleanCommandSwitch("-json")]
-    public bool? Json { get; set; }
-
     [BooleanCommandSwitch("-refresh")]
     public bool? Refresh { get; set; }
-
-    [BooleanCommandSwitch("-no-color")]
-    public bool? NoColor { get; set; }
 }

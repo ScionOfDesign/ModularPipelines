@@ -7,7 +7,7 @@ using ModularPipelines.Options;
 
 namespace ModularPipelines.Logging;
 
-internal class CommandLogger : ICommandLogger
+public sealed class CommandLogger : ICommandLogger
 {
     private readonly IModuleLoggerProvider _moduleLoggerProvider;
     private readonly IOptions<PipelineOptions> _pipelineOptions;

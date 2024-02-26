@@ -5,20 +5,8 @@ namespace ModularPipelines.Terraform.Options;
 
 [CommandPrecedingArguments("output")]
 [ExcludeFromCodeCoverage]
-public record TerraformOutputOptions : TerraformOptions
+public record TerraformOutputOptions : TerraformPrintedOptions
 {
     [PositionalArgument(Position = Position.AfterSwitches)]
     public string? Name { get; set; }
-
-    [BooleanCommandSwitch("-json")]
-    public bool? Json { get; set; }
-
-    [BooleanCommandSwitch("-raw")]
-    public bool? Raw { get; set; }
-
-    [BooleanCommandSwitch("-no-color")]
-    public bool? NoColor { get; set; }
-
-    [CommandSwitch("-state")]
-    public string? State { get; set; }
 }

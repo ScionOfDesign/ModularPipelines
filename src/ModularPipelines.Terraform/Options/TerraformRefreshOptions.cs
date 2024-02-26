@@ -5,11 +5,8 @@ namespace ModularPipelines.Terraform.Options;
 
 [CommandPrecedingArguments("refresh")]
 [ExcludeFromCodeCoverage]
-public record TerraformRefreshOptions : TerraformOptions
+public record TerraformRefreshOptions : TerraformApprovalOptions
 {
-    [BooleanCommandSwitch("-auto-approve")]
-    public bool? AutoApprove { get; set; }
-
     [BooleanCommandSwitch("-refresh-only")]
     public bool? RefreshOnly { get; set; }
 }

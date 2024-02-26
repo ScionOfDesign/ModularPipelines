@@ -5,20 +5,8 @@ namespace ModularPipelines.Terraform.Options;
 
 [CommandPrecedingArguments("init")]
 [ExcludeFromCodeCoverage]
-public record TerraformInitOptions : TerraformOptions
+public record TerraformInitOptions : TerraformPlanOptions
 {
-    [BooleanCommandSwitch("-input")]
-    public bool? Input { get; set; }
-
-    [BooleanCommandSwitch("-lock")]
-    public bool? Lock { get; set; }
-
-    [CommandSwitch("-lock-timeout")]
-    public string? LockTimeout { get; set; }
-
-    [BooleanCommandSwitch("-no-color")]
-    public bool? NoColor { get; set; }
-
     [BooleanCommandSwitch("-upgrade")]
     public bool? Upgrade { get; set; }
 
@@ -51,7 +39,4 @@ public record TerraformInitOptions : TerraformOptions
 
     [CommandSwitch("-lockfile")]
     public string? Lockfile { get; set; }
-
-    [BooleanCommandSwitch("-chdir")]
-    public bool? Chdir { get; set; }
 }

@@ -1,5 +1,6 @@
 using ModularPipelines.Models;
 using ModularPipelines.Options.Linux.AptGet;
+using ModularPipelines.Options.Linux.AptGet.Base;
 
 namespace ModularPipelines.Context.Linux;
 
@@ -27,5 +28,5 @@ public interface IAptGet
 
     Task<CommandResult> Upgrade(AptGetUpgradeOptions? options = default, CancellationToken token = default);
 
-    Task<CommandResult> Custom(AptGetOptions options, CancellationToken token = default);
+    Task<CommandResult> Custom(AptGetOptionsBase options, CancellationToken token = default);
 }

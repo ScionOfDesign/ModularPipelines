@@ -8,11 +8,8 @@ namespace ModularPipelines.Terraform.Options;
 public record TerraformStateReplaceProviderOptions(
     [property: PositionalArgument(Position = Position.AfterSwitches)]
     string Fromproviderfqn, [property: PositionalArgument(Position = Position.AfterSwitches)]
-    string Toproviderfqn) : TerraformOptions
+    string Toproviderfqn) : TerraformApprovalOptions
 {
-    [BooleanCommandSwitch("-auto-approve")]
-    public bool? AutoApprove { get; set; }
-
     [BooleanCommandSwitch("-lock")]
     public bool? Lock { get; set; }
 
@@ -21,9 +18,6 @@ public record TerraformStateReplaceProviderOptions(
 
     [BooleanCommandSwitch("-ignore-remote-version")]
     public bool? IgnoreRemoteVersion { get; set; }
-
-    [BooleanCommandSwitch("-state")]
-    public bool? State { get; set; }
 
     [BooleanCommandSwitch("-state-out")]
     public bool? StateOut { get; set; }

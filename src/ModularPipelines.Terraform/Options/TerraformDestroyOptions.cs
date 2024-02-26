@@ -5,8 +5,4 @@ namespace ModularPipelines.Terraform.Options;
 
 [CommandPrecedingArguments("destroy")]
 [ExcludeFromCodeCoverage]
-public record TerraformDestroyOptions : TerraformOptions
-{
-    [BooleanCommandSwitch("-destroy")]
-    public bool? Destroy { get; set; }
-}
+public record TerraformDestroyOptions : TerraformApprovalOptions;

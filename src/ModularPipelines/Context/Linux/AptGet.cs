@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using ModularPipelines.Models;
 using ModularPipelines.Options.Linux.AptGet;
+using ModularPipelines.Options.Linux.AptGet.Base;
 
 namespace ModularPipelines.Context.Linux;
 
@@ -84,7 +85,7 @@ public class AptGet : IAptGet
     }
 
     /// <inheritdoc/>
-    public async Task<CommandResult> Custom(AptGetOptions options, CancellationToken token = default)
+    public async Task<CommandResult> Custom(AptGetOptionsBase options, CancellationToken token = default)
     {
         return await _command.ExecuteCommandLineTool(options, token);
     }

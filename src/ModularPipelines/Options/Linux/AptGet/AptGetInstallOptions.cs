@@ -1,19 +1,20 @@
 using System.Diagnostics.CodeAnalysis;
 using ModularPipelines.Attributes;
+using ModularPipelines.Options.Linux.AptGet.Base;
 
 namespace ModularPipelines.Options.Linux.AptGet;
 
 [ExcludeFromCodeCoverage]
-public record AptGetInstallOptions : AptGetOptions
+public record AptGetInstallOptions : AptGetPackagesOptionsBase
 {
-    public AptGetInstallOptions(string package)
+    public AptGetInstallOptions() : base()
     {
-        Package = package;
+    }
+
+    public AptGetInstallOptions(params string[] packages) : base(packages)
+    {
     }
 
     [PositionalArgument(Position = Position.AfterSwitches)]
     public string CommandName { get; } = "install";
-
-    [PositionalArgument(Position = Position.AfterSwitches)]
-    public string Package { get; }
 }
