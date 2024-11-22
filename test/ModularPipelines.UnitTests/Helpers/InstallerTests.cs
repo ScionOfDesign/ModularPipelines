@@ -1,6 +1,6 @@
 using ModularPipelines.Context;
 using ModularPipelines.Options;
-using ModularPipelines.Options.Linux;
+using ModularPipelines.Options.Linux.Dpkg;
 using ModularPipelines.Options.Windows;
 using ModularPipelines.TestHelpers;
 using TUnit.Core.Exceptions;
