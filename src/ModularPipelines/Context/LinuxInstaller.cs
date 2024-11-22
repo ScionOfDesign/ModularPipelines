@@ -1,7 +1,7 @@
 using ModularPipelines.Context.Linux;
 using ModularPipelines.Models;
-using ModularPipelines.Options.Linux;
 using ModularPipelines.Options.Linux.AptGet;
+using ModularPipelines.Options.Linux.Dpkg;
 
 namespace ModularPipelines.Context;
 

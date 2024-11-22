@@ -3,6 +3,7 @@ using ModularPipelines.FileSystem;
 using ModularPipelines.Models;
 using ModularPipelines.Options;
 using ModularPipelines.Options.Linux;
+using ModularPipelines.Options.Linux.Dpkg;
 using ModularPipelines.Options.Mac;
 using ModularPipelines.Options.Windows;
 using File = ModularPipelines.FileSystem.File;

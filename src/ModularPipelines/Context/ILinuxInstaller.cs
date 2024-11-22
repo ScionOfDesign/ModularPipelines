@@ -1,5 +1,5 @@
 using ModularPipelines.Models;
-using ModularPipelines.Options.Linux;
+using ModularPipelines.Options.Linux.Dpkg;
 
 namespace ModularPipelines.Context;
 

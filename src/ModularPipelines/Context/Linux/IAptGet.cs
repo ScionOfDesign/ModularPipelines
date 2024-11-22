@@ -1,6 +1,5 @@
 using ModularPipelines.Models;
 using ModularPipelines.Options.Linux.AptGet;
-using ModularPipelines.Options.Linux.AptGet.Base;
 
 namespace ModularPipelines.Context.Linux;
 

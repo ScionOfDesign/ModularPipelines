@@ -324,7 +324,7 @@ public abstract record AptGetOptionsBase : CommandLineToolOptions
     public string? ConfigFile { get; set; }
 
     /// <summary>
-    /// Option; This option is used to set an arbitrary configuration option. The syntax is -o Foo::Bar=bar.
+    /// Option; This option is used to set an arbitrary configuration option. The syntax is Foo::Bar=bar.
     /// </summary>
     [CommandSwitch("--option")]
     public string[]? Option { get; set; }
