@@ -1,5 +1,4 @@
 ﻿using ModularPipelines.Models;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -10,11 +9,11 @@ public class KeyValueTests
     {
         KeyValue keyValue = ("one", "two");
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(keyValue.Key).Is.EqualTo("one");
-            Assert.That(keyValue.Value).Is.EqualTo("two");
-        });
+            await Assert.That(keyValue.Key).IsEqualTo("one");
+            await Assert.That(keyValue.Value).IsEqualTo("two");
+        }
     }
 
     [Test]
@@ -22,11 +21,11 @@ public class KeyValueTests
     {
         KeyValue keyValue = new Tuple<string, string>("one", "two");
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(keyValue.Key).Is.EqualTo("one");
-            Assert.That(keyValue.Value).Is.EqualTo("two");
-        });
+            await Assert.That(keyValue.Key).IsEqualTo("one");
+            await Assert.That(keyValue.Value).IsEqualTo("two");
+        }
     }
 
     [Test]
@@ -34,10 +33,10 @@ public class KeyValueTests
     {
         KeyValue keyValue = new KeyValuePair<string, string>("one", "two");
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(keyValue.Key).Is.EqualTo("one");
-            Assert.That(keyValue.Value).Is.EqualTo("two");
-        });
+            await Assert.That(keyValue.Key).IsEqualTo("one");
+            await Assert.That(keyValue.Value).IsEqualTo("two");
+        }
     }
 }

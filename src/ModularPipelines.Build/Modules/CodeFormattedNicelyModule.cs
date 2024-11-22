@@ -5,8 +5,10 @@ using ModularPipelines.Build.Settings;
 using ModularPipelines.Context;
 using ModularPipelines.DotNet.Extensions;
 using ModularPipelines.DotNet.Options;
+using ModularPipelines.Extensions;
 using ModularPipelines.Git.Extensions;
 using ModularPipelines.GitHub.Attributes;
+using ModularPipelines.GitHub.Extensions;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 
@@ -29,6 +31,21 @@ public class CodeFormattedNicelyModule : Module<CommandResult>
         _githubSettings = githubSettings;
     }
 
+    protected override Task<SkipDecision> ShouldSkip(IPipelineContext context)
+    {
+        if (context.GitHub().EnvironmentVariables.EventName != "pull_request")
+        {
+            return SkipDecision.Skip("Not a pull request").AsTask();
+        }
+        
+        if (string.IsNullOrEmpty(_githubSettings.Value.StandardToken))
+        {
+            return SkipDecision.Skip("No authentication token for git").AsTask();
+        }
+
+        return SkipDecision.DoNotSkip.AsTask();
+    }
+
     /// <inheritdoc/>
     protected override async Task<CommandResult?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
     {
@@ -41,7 +58,7 @@ public class CodeFormattedNicelyModule : Module<CommandResult>
         {
             await context.DotNet().Format(new DotNetFormatOptions
             {
-                Arguments = new[] { "whitespace" },
+                Arguments = ["whitespace"],
                 WorkingDirectory = context.Git().RootDirectory,
                 VerifyNoChanges = true,
                 Severity = "info",
@@ -74,13 +91,13 @@ public class CodeFormattedNicelyModule : Module<CommandResult>
 
             await context.DotNet().Format(new DotNetFormatOptions
             {
-                Arguments = new[] { "whitespace" },
+                Arguments = ["whitespace"],
                 WorkingDirectory = context.Git().RootDirectory,
                 VerifyNoChanges = false,
                 Severity = "info",
             }, cancellationToken);
 
-            var branchTriggeringPullRequest = _githubSettings.Value.PullRequest?.Branch!;
+            var branchTriggeringPullRequest = context.GitHub().EnvironmentVariables.HeadRef!;
 
             await GitHelpers.SetUserCommitInformation(context, cancellationToken);
 

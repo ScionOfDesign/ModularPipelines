@@ -50,9 +50,10 @@ public static class CommandOptionsObjectArgumentParser
             var indexOfMatchingPrecedingArgumentPlaceholder =
                 precedingArguments.FindIndex(x => x == placeholderName);
 
-            if (indexOfMatchingPrecedingArgumentPlaceholder < 0)
+            if (indexOfMatchingPrecedingArgumentPlaceholder < 0 && !string.IsNullOrEmpty(value))
             {
-                throw new ArgumentException($"No matching placeholder found for property {positionalPlaceholderArgument.Name}");
+                precedingArguments.Add(value);
+                continue;
             }
 
             if (string.IsNullOrWhiteSpace(value) && precedingArguments[indexOfMatchingPrecedingArgumentPlaceholder].StartsWith('<'))
@@ -60,12 +61,17 @@ public static class CommandOptionsObjectArgumentParser
                 throw new ArgumentException($"No value provided for property {positionalPlaceholderArgument.Name}");
             }
 
-            if (string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(value) && indexOfMatchingPrecedingArgumentPlaceholder >= 0)
             {
                 precedingArguments.RemoveAt(indexOfMatchingPrecedingArgumentPlaceholder);
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+            
             precedingArguments[indexOfMatchingPrecedingArgumentPlaceholder] = value;
         }
     }
@@ -174,7 +180,7 @@ public static class CommandOptionsObjectArgumentParser
 
         if (singleValue is not null)
         {
-            return new[] { singleValue };
+            return [singleValue];
         }
 
         return GetValues(rawValue);

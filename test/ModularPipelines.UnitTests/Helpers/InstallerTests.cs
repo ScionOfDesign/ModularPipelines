@@ -3,7 +3,7 @@ using ModularPipelines.Options;
 using ModularPipelines.Options.Linux;
 using ModularPipelines.Options.Windows;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions.Is;
+using TUnit.Core.Exceptions;
 
 namespace ModularPipelines.UnitTests.Helpers;
 
@@ -14,8 +14,7 @@ public class InstallerTests : TestBase
     {
         if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != "true")
         {
-            TestContext.Current!.SkipTest("Avoid installing things on people's machines");
-            return;
+            throw new SkipTestException("Avoid installing things on people's machines");
         }
         
         var downloader = await GetService<IDownloader>();
@@ -28,7 +27,7 @@ public class InstallerTests : TestBase
             var file = await downloader.DownloadFileAsync(new DownloadFileOptions(uri));
 
             var result = await installer.WindowsInstaller.InstallExe(new ExeInstallerOptions(file));
-            await Assert.That(result.ExitCode).Is.Zero();
+            await Assert.That(result.ExitCode).IsZero();
         }
         else if (OperatingSystem.IsLinux())
         {
@@ -37,7 +36,7 @@ public class InstallerTests : TestBase
             var file = await downloader.DownloadFileAsync(new DownloadFileOptions(uri));
 
             var result = await installer.LinuxInstaller.InstallFromDpkg(new DpkgInstallOptions(file));
-            await Assert.That(result.ExitCode).Is.Zero();
+            await Assert.That(result.ExitCode).IsZero();
         }
     }
 }

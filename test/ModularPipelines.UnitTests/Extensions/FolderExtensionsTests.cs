@@ -1,7 +1,6 @@
 using System.Collections;
 using ModularPipelines.Extensions;
 using ModularPipelines.FileSystem;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests.Extensions;
 
@@ -12,17 +11,17 @@ public class FolderExtensionsTests
     {
         var folders = new List<Folder>
         {
-            new Folder(Path.Combine(Environment.CurrentDirectory, "Folder1")),
-            new Folder(Path.Combine(Environment.CurrentDirectory, "Folder2")),
+            new(Path.Combine(TestContext.WorkingDirectory, "Folder1")),
+            new(Path.Combine(TestContext.WorkingDirectory, "Folder2")),
         }.AsEnumerable();
 
         var paths = folders.AsPaths();
-        await Assert.That(paths).Is.AssignableTo<IEnumerable<string>>();
-        await Assert.That(paths).Is.Not.AssignableTo<List<string>>();
-        await Assert.That(paths).Is.EquivalentTo(new List<string>
+        await Assert.That(paths).IsAssignableTo(typeof(IEnumerable<string>))
+            .And.IsNotAssignableTo(typeof(List<string>))
+            .And.IsEquivalentCollectionTo(new List<string>
         {
-            Path.Combine(Environment.CurrentDirectory, "Folder1"),
-            Path.Combine(Environment.CurrentDirectory, "Folder2"),
+            Path.Combine(TestContext.WorkingDirectory, "Folder1"),
+            Path.Combine(TestContext.WorkingDirectory, "Folder2"),
         });
     }
 
@@ -31,18 +30,17 @@ public class FolderExtensionsTests
     {
         var folders = new List<Folder>
         {
-            new Folder(Path.Combine(Environment.CurrentDirectory, "Folder1")),
-            new Folder(Path.Combine(Environment.CurrentDirectory, "Folder2")),
+            new Folder(Path.Combine(TestContext.WorkingDirectory, "Folder1")),
+            new Folder(Path.Combine(TestContext.WorkingDirectory, "Folder2")),
         };
 
         var paths = folders.AsPaths();
-        await Assert.That(paths).Is.AssignableTo<IEnumerable>();
-        await Assert.That(paths).Is.AssignableTo<IEnumerable<string>>();
-        await Assert.That(paths).Is.AssignableTo<List<string>>();
-        await Assert.That(paths).Is.EquivalentTo(new List<string>
-        {
-            Path.Combine(Environment.CurrentDirectory, "Folder1"),
-            Path.Combine(Environment.CurrentDirectory, "Folder2"),
-        });
+        await Assert.That(paths).IsAssignableTo(typeof(IEnumerable));
+        await Assert.That(paths).IsAssignableTo(typeof(IEnumerable<string>));
+        await Assert.That(paths).IsAssignableTo(typeof(List<string>));
+        await Assert.That(paths).IsEquivalentCollectionTo([
+            Path.Combine(TestContext.WorkingDirectory, "Folder1"),
+            Path.Combine(TestContext.WorkingDirectory, "Folder2")
+        ]);
     }
 }

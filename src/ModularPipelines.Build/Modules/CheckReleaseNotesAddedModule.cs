@@ -5,7 +5,6 @@ using ModularPipelines.Git.Extensions;
 using ModularPipelines.GitHub.Attributes;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
-using Octokit;
 using File = ModularPipelines.FileSystem.File;
 
 namespace ModularPipelines.Build.Modules;
@@ -13,6 +12,7 @@ namespace ModularPipelines.Build.Modules;
 [RunOnLinux]
 [SkipOnMainBranch]
 [SkipIfDependabot]
+[SkipIfDependencyPullRequest]
 [DependsOn<ChangedFilesInPullRequestModule>]
 public class CheckReleaseNotesAddedModule : Module
 {

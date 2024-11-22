@@ -1,7 +1,6 @@
 ﻿using ModularPipelines.Context;
 using ModularPipelines.GitHub.PipelineWriters;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -47,13 +46,13 @@ public class PipelineWriterTests : TestBase
                 PipelineProjectPath = RandomFilePath.Path!,
                 Environment = "${{ github.ref == 'refs/heads/main' && 'Production' || 'Pull Requests' }}",
                 CacheNuGet = true,
-                DotNetRunFramework = "net7.0",
-                ValuesToMask = new[]
-                {
+                DotNetRunFramework = "net8.0",
+                ValuesToMask =
+                [
                     "${{ secrets.DOTNET_FORMAT_PUSH_TOKEN }}", "${{ secrets.NuGet__ApiKey }}",
                     "${{ secrets.ADMIN_TOKEN }}",
-                    "${{ secrets.CODACY_APIKEY }}",
-                },
+                    "${{ secrets.CODACY_APIKEY }}"
+                ],
                 EnvironmentVariables = new Dictionary<string, string>
                 {
                     ["DOTNET_ENVIRONMENT"] = "${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}",
@@ -84,7 +83,7 @@ public class PipelineWriterTests : TestBase
             .AddPipelineFileWriter<GitHubYamlWriter>()
             .ExecutePipelineAsync();
         await Assert.That((await RandomFilePath.ReadAsync()).Trim()).
-            Is.EqualTo($$$"""
+            IsEqualTo($$$"""
                        name: Test
                        on:
                          push:
@@ -135,7 +134,7 @@ public class PipelineWriterTests : TestBase
                                key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
                                restore-keys: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
                            - name: Run Pipeline
-                             run: dotnet run -c Release --framework net7.0 {{{RandomFilePath}}}
+                             run: dotnet run -c Release --framework net8.0 {{{RandomFilePath}}}
                              env:
                                DOTNET_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
                                NuGet__ApiKey: ${{ secrets.NuGet__ApiKey }}

@@ -7,7 +7,6 @@ using ModularPipelines.Context;
 using ModularPipelines.Extensions;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -35,9 +34,10 @@ public class LoggingSecretTests
         }
     }
 
-    [DataDrivenTest("Shh!")]
-    [DataDrivenTest("SuperSecret!")]
-    [DataDrivenTest("🤐")]
+    [Test]
+    [Arguments("Shh!")]
+    [Arguments("SuperSecret!")]
+    [Arguments("🤐")]
     public async Task SecretIsCensored(string secretValue)
     {
         var stringBuilder = new StringBuilder();
@@ -53,7 +53,7 @@ public class LoggingSecretTests
             .ExecutePipelineAsync();
 
         var actualLogResult = stringBuilder.ToString().Trim();
-        await Assert.That(actualLogResult).Does.Contain($"My Secret Value is: **********");
-        await Assert.That(actualLogResult).Does.Not.Contain(secretValue);
+        await Assert.That(actualLogResult).Contains($"My Secret Value is: **********");
+        await Assert.That(actualLogResult).DoesNotContain(secretValue);
     }
 }

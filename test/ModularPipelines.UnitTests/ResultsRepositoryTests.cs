@@ -6,7 +6,6 @@ using ModularPipelines.FileSystem;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 using Status = ModularPipelines.Enums.Status;
 
 namespace ModularPipelines.UnitTests;
@@ -40,7 +39,7 @@ public class ResultsRepositoryTests : TestBase
         }
     }
 
-    [DependsOn<Module1>]
+    [ModularPipelines.Attributes.DependsOn<Module1>]
     private class Module2 : Module
     {
         protected override Task<IDictionary<string, object>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
@@ -58,7 +57,7 @@ public class ResultsRepositoryTests : TestBase
             .AddModule<Module1>()
             .AddModule<Module2>()
             .ExecutePipelineAsync();
-        await Assert.That(pipeline.Modules.All(x => x.Status == Status.Successful)).Is.True();
+        await Assert.That(pipeline.Modules.All(x => x.Status == Status.Successful)).IsTrue();
     }
 
     [Test]
@@ -71,6 +70,6 @@ public class ResultsRepositoryTests : TestBase
             .AddModule<Module2>()
             .RunCategories("Other")
             .ExecutePipelineAsync();
-        await Assert.That(pipeline.Modules.All(x => x.Status == Status.UsedHistory)).Is.True();
+        await Assert.That(pipeline.Modules.All(x => x.Status == Status.UsedHistory)).IsTrue();
     }
 }

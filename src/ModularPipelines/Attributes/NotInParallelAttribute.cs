@@ -12,7 +12,7 @@ public class NotInParallelAttribute : Attribute
     /// Other modules with a different constraint key can run in parallel still.
     /// If null or empty, then the module will not be run in parallel with any other module.
     /// </summary>
-    public string[] ConstraintKeys { get; } = Array.Empty<string>();
+    public string[] ConstraintKeys { get; } = [];
 
     public NotInParallelAttribute()
     {
@@ -25,6 +25,11 @@ public class NotInParallelAttribute : Attribute
 
     public NotInParallelAttribute(params string[] constraintKeys)
     {
+        if (constraintKeys.Length != constraintKeys.Distinct().Count())
+        {
+            throw new ArgumentException("Duplicate constraint keys are not allowed.");
+        }
+        
         ConstraintKeys = constraintKeys;
     }
 }

@@ -2,7 +2,6 @@ using ModularPipelines.Context;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -29,11 +28,11 @@ public class SkippedModuleTests : TestBase
 
         var moduleResult = await module;
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(moduleResult.ModuleResultType).Is.EqualTo(ModuleResultType.Skipped);
-            Assert.That(moduleResult.Exception).Is.Null();
-            Assert.That(() => moduleResult.Value).Throws.Exception();
-        });
+            await Assert.That(moduleResult.ModuleResultType).IsEqualTo(ModuleResultType.Skipped);
+            await Assert.That(moduleResult.Exception).IsNull();
+            await Assert.That(() => moduleResult.Value).ThrowsException();
+        }
     }
 }

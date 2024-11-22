@@ -6,7 +6,6 @@ using ModularPipelines.Git.Extensions;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests.Helpers;
 
@@ -22,6 +21,17 @@ public class DotNetTests : TestBase
             }, token: cancellationToken);
         }
     }
+    
+    private class DotNetFormatModule : Module<CommandResult>
+    {
+        protected override async Task<CommandResult?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
+        {
+            return await context.DotNet().Format(new DotNetFormatOptions
+            {
+                ProjectSolution = context.Git().RootDirectory.FindFile(x => x.Name.Contains("TestsForTests")).AssertExists(),
+            }, token: cancellationToken);
+        }
+    }
 
     [Test]
     public async Task Has_Not_Errored()
@@ -30,12 +40,27 @@ public class DotNetTests : TestBase
 
         var moduleResult = await module;
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(moduleResult.ModuleResultType).Is.EqualTo(ModuleResultType.Success);
-            Assert.That(moduleResult.Exception).Is.Null();
-            Assert.That(moduleResult.Value).Is.Not.Null();
-        });
+            await Assert.That(moduleResult.ModuleResultType).IsEqualTo(ModuleResultType.Success);
+            await Assert.That(moduleResult.Exception).IsNull();
+            await Assert.That(moduleResult.Value).IsNotNull();
+        }
+    }
+    
+    [Test]
+    public async Task Format_Has_Not_Errored()
+    {
+        var module = await RunModule<DotNetFormatModule>();
+
+        var moduleResult = await module;
+        
+        using (Assert.Multiple())
+        {
+            await Assert.That(moduleResult.ModuleResultType).IsEqualTo(ModuleResultType.Success);
+            await Assert.That(moduleResult.Exception).IsNull();
+            await Assert.That(moduleResult.Value).IsNotNull();
+        }
     }
 
     [Test]
@@ -45,10 +70,10 @@ public class DotNetTests : TestBase
 
         var moduleResult = await module;
 
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(moduleResult.Value!.StandardError).Is.Null().Or.Is.Empty();
-            Assert.That(moduleResult.Value.StandardOutput).Does.Match("\\d+");
-        });
+            await Assert.That(moduleResult.Value!.StandardError).IsNull().Or.IsEmpty();
+            await Assert.That(moduleResult.Value.StandardOutput).Matches("\\d+");
+        }
     }
 }

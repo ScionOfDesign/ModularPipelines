@@ -14,15 +14,15 @@ public class PipelineProgressTests
 {
     private static bool _originalInteractive;
 
-    [OnlyOnceSetUp]
+    [Before(Class)]
     public static void Setup()
     {
         _originalInteractive = AnsiConsole.Profile.Capabilities.Interactive;
         AnsiConsole.Profile.Capabilities.Interactive = true;
     }
 
-    [CleanUp]
-    public void CleanUp()
+    [After(Class)]
+    public static void CleanUp()
     {
         AnsiConsole.Profile.Capabilities.Interactive = _originalInteractive;
     }
@@ -36,7 +36,7 @@ public class PipelineProgressTests
         }
     }
 
-    [DependsOn<Module1>]
+    [ModularPipelines.Attributes.DependsOn<Module1>]
     private class Module2 : Module
     {
         protected override async Task<IDictionary<string, object>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
@@ -46,7 +46,7 @@ public class PipelineProgressTests
         }
     }
 
-    [DependsOn<Module1>]
+    [ModularPipelines.Attributes.DependsOn<Module1>]
     private class Module3 : Module
     {
         protected override async Task<IDictionary<string, object>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
@@ -56,12 +56,12 @@ public class PipelineProgressTests
         }
     }
 
-    [DependsOn<Module1>]
+    [ModularPipelines.Attributes.DependsOn<Module1>]
     private class Module4 : Module
     {
         protected internal override Task<SkipDecision> ShouldSkip(IPipelineContext context)
         {
-            return SkipDecision.Skip("Teting").AsTask();
+            return SkipDecision.Skip("Testing").AsTask();
         }
 
         protected override async Task<IDictionary<string, object>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ public class PipelineProgressTests
         }
     }
 
-    [DependsOn<Module1>]
+    [ModularPipelines.Attributes.DependsOn<Module1>]
     private class Module5 : Module
     {
         protected internal override Task<bool> ShouldIgnoreFailures(IPipelineContext context, Exception exception)
@@ -131,6 +131,6 @@ public class PipelineProgressTests
                     .AddModule<Module6>()
                     .AddModule<Module7>()
                     .ExecutePipelineAsync()).
-            Throws.Exception().OfType<ModuleFailedException>();
+            Throws<ModuleFailedException>();
     }
 }

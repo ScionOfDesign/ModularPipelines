@@ -1,10 +1,10 @@
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ModularPipelines.Enums;
 using ModularPipelines.Interfaces;
 using ModularPipelines.TestHelpers;
 using Moq;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -15,7 +15,7 @@ public class SmartCollapsableLoggingInternalTests : TestBase
     {
         var stringBuilder = await Execute(BuildSystem.AzurePipelines);
         await Assert.That(stringBuilder.ToString().Trim()).
-            Is.EqualTo("""
+            IsEqualTo("""
                        ##[group]MyGroup
                        Foo bar!
                        ##[endgroup]
@@ -27,7 +27,7 @@ public class SmartCollapsableLoggingInternalTests : TestBase
     {
         var stringBuilder = await Execute(BuildSystem.GitHubActions);
         await Assert.That(stringBuilder.ToString().Trim()).
-            Is.EqualTo("""
+            IsEqualTo("""
                        ::group::MyGroup
                        Foo bar!
                        ::endgroup::
@@ -39,25 +39,26 @@ public class SmartCollapsableLoggingInternalTests : TestBase
     {
         var stringBuilder = await Execute(BuildSystem.TeamCity);
         await Assert.That(stringBuilder.ToString().Trim()).
-            Is.EqualTo("""
+            IsEqualTo("""
                        ##teamcity[blockOpened name='MyGroup']
                        Foo bar!
                        ##teamcity[blockClosed name='MyGroup']
                        """);
     }
 
-    [DataDrivenTest(BuildSystem.Jenkins)]
-    [DataDrivenTest(BuildSystem.GitLab)]
-    [DataDrivenTest(BuildSystem.Bitbucket)]
-    [DataDrivenTest(BuildSystem.TravisCI)]
-    [DataDrivenTest(BuildSystem.AppVeyor)]
-    [DataDrivenTest(BuildSystem.Unknown)]
-    [DataDrivenTest(-1)]
+    [Test]
+    [Arguments(BuildSystem.Jenkins)]
+    [Arguments(BuildSystem.GitLab)]
+    [Arguments(BuildSystem.Bitbucket)]
+    [Arguments(BuildSystem.TravisCI)]
+    [Arguments(BuildSystem.AppVeyor)]
+    [Arguments(BuildSystem.Unknown)]
+    [Arguments(-1)]
     public async Task UnsupportedLogGroupSystems(BuildSystem buildSystem)
     {
         var stringBuilder = await Execute(buildSystem);
         await Assert.That(stringBuilder.ToString().Trim()).
-            Is.EqualTo("""
+            IsEqualTo("""
                        ----------MyGroup Start----------
                        Foo bar!
                        -----------MyGroup End-----------
@@ -70,18 +71,24 @@ public class SmartCollapsableLoggingInternalTests : TestBase
 
         var buildSystemDetectorMock = new Mock<IBuildSystemDetector>();
 
+        var loggerMock = new Mock<ILogger<SmartCollapsableLogging>>();
+
+        loggerMock.Setup(x => x.IsEnabled(LogLevel.Information))
+            .Returns(true);
+        
         buildSystemDetectorMock.Setup(x => x.GetCurrentBuildSystem())
             .Returns(buildSystem);
 
-        var azurePipelines = await GetService<IInternalCollapsableLogging>((_, collection) =>
+        var buildSystemLogger = await GetService<IInternalCollapsableLogging>((_, collection) =>
         {
+            collection.AddSingleton(loggerMock.Object);
             collection.AddSingleton(buildSystemDetectorMock.Object);
             collection.AddSingleton<IConsoleWriter>(new StringBuilderConsoleWriter(stringBuilder));
         });
 
-        azurePipelines.T.WriteConsoleLogGroupInternal("MyGroup", "Foo bar!");
+        buildSystemLogger.T.WriteConsoleLogGroupInternal("MyGroup", "Foo bar!", LogLevel.Information);
 
-        await azurePipelines.Host.DisposeAsync();
+        await buildSystemLogger.Host.DisposeAsync();
 
         return stringBuilder;
     }

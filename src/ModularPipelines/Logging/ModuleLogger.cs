@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using ModularPipelines.Engine;
 using ModularPipelines.Helpers;
 
@@ -7,21 +8,22 @@ namespace ModularPipelines.Logging;
 
 internal abstract class ModuleLogger : IModuleLogger
 {
-    protected static readonly object Lock = new();
-    protected Exception? _exception;
+    internal static readonly AsyncLocal<IModuleLogger?> Values = new();
 
+    internal static ILogger Current => (Values.Value as ILogger) ?? NullLogger.Instance;
+
+    protected static readonly object DisposeLock = new();
+    protected static readonly object LogLock = new();
+    protected Exception? _exception;
+    
     internal DateTime LastLogWritten { get; set; } = DateTime.MinValue;
 
     public abstract void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter);
 
     public abstract bool IsEnabled(LogLevel logLevel);
 
-#if NET6_0
-    public abstract IDisposable BeginScope<TState>(TState state);
-#else
     public abstract IDisposable? BeginScope<TState>(TState state)
         where TState : notnull;
-#endif
 
     public abstract void Dispose();
 
@@ -37,7 +39,6 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
 {
     private readonly ILogger<T> _defaultLogger;
     private readonly ISecretObfuscator _secretObfuscator;
-    private readonly ISecretProvider _secretProvider;
     private readonly IConsoleWriter _consoleWriter;
     private readonly ISmartCollapsableLoggingStringBlockProvider _collapsableLoggingStringBlockProvider;
 
@@ -49,13 +50,11 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
     public ModuleLogger(ILogger<T> defaultLogger,
         IModuleLoggerContainer moduleLoggerContainer,
         ISecretObfuscator secretObfuscator,
-        ISecretProvider secretProvider,
         IConsoleWriter consoleWriter,
         ISmartCollapsableLoggingStringBlockProvider collapsableLoggingStringBlockProvider)
     {
         _defaultLogger = defaultLogger;
         _secretObfuscator = secretObfuscator;
-        _secretProvider = secretProvider;
         _consoleWriter = consoleWriter;
         _collapsableLoggingStringBlockProvider = collapsableLoggingStringBlockProvider;
         moduleLoggerContainer.AddLogger(this);
@@ -67,18 +66,11 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
     {
         Dispose();
     }
-
-#if NET6_0
-    public override IDisposable BeginScope<TState>(TState state)
-    {
-        return new NoopDisposable();
-    }
-#else
+    
     public override IDisposable? BeginScope<TState>(TState state)
     {
         return new NoopDisposable();
     }
-#endif
 
     public override bool IsEnabled(LogLevel logLevel)
     {
@@ -87,28 +79,31 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
 
     public override void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string>? formatter)
     {
-        if (!IsEnabled(logLevel) || _isDisposed)
+        lock (LogLock)
         {
-            return;
+            if (!IsEnabled(logLevel) || _isDisposed)
+            {
+                return;
+            }
+            
+            if (state?.GetType().FullName == "Microsoft.Extensions.Logging.FormattedLogValues")
+            {
+                TryObfuscateValues(state);
+            }
+
+            var mappedFormatter = MapFormatter(formatter);
+
+            var valueTuple = (logLevel, eventId, state, exception, mappedFormatter);
+
+            _stringOrLogEvents.Add(valueTuple!);
+
+            LastLogWritten = DateTime.UtcNow;
         }
-
-        if (state?.GetType().FullName == "Microsoft.Extensions.Logging.FormattedLogValues")
-        {
-            TryObfuscateValues(state);
-        }
-
-        var mappedFormatter = MapFormatter(formatter);
-
-        var valueTuple = (logLevel, eventId, state, exception, mappedFormatter);
-
-        _stringOrLogEvents.Add(valueTuple!);
-
-        LastLogWritten = DateTime.UtcNow;
     }
 
     public override void Dispose()
     {
-        lock (Lock)
+        lock (DisposeLock)
         {
             if (_isDisposed)
             {
@@ -131,8 +126,7 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
                     }
                     else if (stringOrLogEvent.LogEvent != null)
                     {
-                        var (logLevel, eventId, state, exception, formatter) = stringOrLogEvent.LogEvent.Value;
-                        _defaultLogger.Log(logLevel, eventId, state, exception, formatter);
+                        Log(stringOrLogEvent.LogEvent.Value);
                     }
                 }
 
@@ -148,15 +142,7 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
 
     public override void LogToConsole(string value)
     {
-        foreach (var secret in _secretProvider.Secrets)
-        {
-            if (value.Contains(secret))
-            {
-                value = value.Replace(secret, "**********");
-            }
-        }
-
-        _stringOrLogEvents.Add(value);
+        _stringOrLogEvents.Add(_secretObfuscator.Obfuscate(value, null));
     }
 
     private void PrintStartBlock()
@@ -180,11 +166,26 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
         }
     }
 
+    private void Log((LogLevel LogLevel, EventId EventId, object State, Exception? Exception, Func<object, Exception?, string> Formatter) logEvent)
+    {
+        var (logLevel, eventId, state, exception, formatter) = logEvent;
+
+        try
+        {
+            _defaultLogger.Log(logLevel, eventId, state, exception, formatter);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            Console.WriteLine($"{logLevel}: {eventId} - {state}{exception}");
+        }
+    }
+
     private void TryObfuscateValues(object state)
     {
         var objArrayNullable = state.GetType()
             .GetField("_values", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?.GetValue(state) as object?[] ?? Array.Empty<object>();
+            ?.GetValue(state) as object?[] ?? [];
 
         for (var index = 0; index < objArrayNullable.Length; index++)
         {
@@ -195,13 +196,8 @@ internal class ModuleLogger<T> : ModuleLogger, IModuleLogger, ILogger<T>
             }
 
             var objString = obj.ToString() ?? string.Empty;
-            foreach (var secret in _secretProvider.Secrets)
-            {
-                if (objString.Contains(secret))
-                {
-                    objArrayNullable[index] = objString.Replace(secret, "**********");
-                }
-            }
+
+            objArrayNullable[index] = _secretObfuscator.Obfuscate(objString, null);
         }
     }
 

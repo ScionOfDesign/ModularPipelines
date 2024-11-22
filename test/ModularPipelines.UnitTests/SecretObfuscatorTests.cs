@@ -5,7 +5,6 @@ using ModularPipelines.Host;
 using ModularPipelines.TestHelpers;
 using ModularPipelines.UnitTests.Models;
 using Moq;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -33,8 +32,8 @@ public class SecretObfuscatorTests
         await ExecutePipelineAsync();
 
         var logOutput = _stringBuilder.ToString();
-        await Assert.That(logOutput).Does.Contain("::add-mask::This is a secret value!");
-        await Assert.That(logOutput).Does.Not.Contain("::add-mask::This is NOT a secret value!");
+        await Assert.That(logOutput).Contains("::add-mask::This is a secret value!");
+        await Assert.That(logOutput).DoesNotContain("::add-mask::This is NOT a secret value!");
     }
 
     [Test]
@@ -45,8 +44,8 @@ public class SecretObfuscatorTests
         await ExecutePipelineAsync();
 
         var logOutput = _stringBuilder.ToString();
-        await Assert.That(logOutput).Does.Not.Contain("::add-mask::This is a secret value!");
-        await Assert.That(logOutput).Does.Not.Contain("::add-mask::This is NOT a secret value!");
+        await Assert.That(logOutput).DoesNotContain("::add-mask::This is a secret value!");
+        await Assert.That(logOutput).DoesNotContain("::add-mask::This is NOT a secret value!");
     }
 
     private Task<IPipelineHost> GetPipelineHost()

@@ -3,7 +3,6 @@ using ModularPipelines.Context;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 using Status = ModularPipelines.Enums.Status;
 
 namespace ModularPipelines.UnitTests;
@@ -19,7 +18,7 @@ public class AlwaysRunTests : TestBase
         }
     }
 
-    [DependsOn<MyModule1>]
+    [ModularPipelines.Attributes.DependsOn<MyModule1>]
     public class MyModule2 : Module
     {
         public override ModuleRunType ModuleRunType => ModuleRunType.AlwaysRun;
@@ -31,7 +30,7 @@ public class AlwaysRunTests : TestBase
         }
     }
 
-    [DependsOn<MyModule2>]
+    [ModularPipelines.Attributes.DependsOn<MyModule2>]
     public class MyModule3 : Module
     {
         public override ModuleRunType ModuleRunType => ModuleRunType.AlwaysRun;
@@ -43,7 +42,7 @@ public class AlwaysRunTests : TestBase
         }
     }
 
-    [DependsOn<MyModule3>]
+    [ModularPipelines.Attributes.DependsOn<MyModule3>]
     public class MyModule4 : Module
     {
         public override ModuleRunType ModuleRunType => ModuleRunType.AlwaysRun;
@@ -61,12 +60,12 @@ public class AlwaysRunTests : TestBase
         var (myModule1, myModule2, myModule3, myModule4)
             = await RunModules<MyModule1, MyModule2, MyModule3, MyModule4>();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(myModule1.Status).Is.EqualTo(Status.Failed);
-            Assert.That(myModule2.Status).Is.EqualTo(Status.Failed);
-            Assert.That(myModule3.Status).Is.EqualTo(Status.Failed);
-            Assert.That(myModule4.Status).Is.Not.EqualTo(Status.NotYetStarted);
-        });
+            await Assert.That(myModule1.Status).IsEqualTo(Status.Failed);
+            await Assert.That(myModule2.Status).IsEqualTo(Status.Failed);
+            await Assert.That(myModule3.Status).IsEqualTo(Status.Failed);
+            await Assert.That(myModule4.Status).IsNotEqualTo(Status.NotYetStarted);
+        }
     }
 }

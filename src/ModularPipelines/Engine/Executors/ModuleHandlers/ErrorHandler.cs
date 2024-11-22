@@ -27,6 +27,9 @@ internal class ErrorHandler<T> : BaseHandler<T>, IErrorHandler
             Module.Status = Status.PipelineTerminated;
             Context.Logger.LogInformation("Pipeline has been canceled");
 
+            // Wait so this exception isn't propogated first and the actual exception from another module is
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
             throw new PipelineCancelledException(Context.EngineCancellationToken);
         }
         else
@@ -48,15 +51,19 @@ internal class ErrorHandler<T> : BaseHandler<T>, IErrorHandler
 
     private bool IsPipelineCanceled(Exception exception)
     {
-        return exception is TaskCanceledException or OperationCanceledException
+        return exception is TaskCanceledException or OperationCanceledException or ModuleTimeoutException
                && Context.EngineCancellationToken.IsCancelled;
     }
 
     private bool IsModuleTimedOutException(Exception exception)
     {
-        return exception is ModuleTimeoutException or TaskCanceledException or OperationCanceledException
-               && ModuleCancellationTokenSource.IsCancellationRequested
-               && !Context.EngineCancellationToken.IsCancelled;
+        if (Module.Timeout == TimeSpan.Zero)
+        {
+            return false;
+        }
+        
+        var isTimeoutExceed = Module.Stopwatch.Elapsed >= Module.Timeout;
+        return isTimeoutExceed && exception is ModuleTimeoutException or TaskCanceledException or OperationCanceledException;
     }
 
     private async Task SaveFailedResult(Exception exception)
@@ -77,10 +84,12 @@ internal class ErrorHandler<T> : BaseHandler<T>, IErrorHandler
         Context.Logger.SetException(exception);
 
         var moduleFailedException = new ModuleFailedException(Module, exception);
-
-        Context.EngineCancellationToken.Cancel();
-
-        ModuleResultTaskCompletionSource.TrySetException(moduleFailedException);
+        
+        Task.Delay(TimeSpan.FromSeconds(1)).ContinueWith(_ =>
+        {
+            Context.EngineCancellationToken.Cancel();
+            ModuleResultTaskCompletionSource.TrySetException(moduleFailedException);
+        });
 
         throw moduleFailedException;
     }

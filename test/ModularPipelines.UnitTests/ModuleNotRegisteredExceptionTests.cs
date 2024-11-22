@@ -16,7 +16,7 @@ public class ModuleNotRegisteredExceptionTests : TestBase
         }
     }
 
-    [DependsOn<Module1>]
+    [ModularPipelines.Attributes.DependsOn<Module1>]
     private class Module2 : Module
     {
         protected override async Task<IDictionary<string, object>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
@@ -29,12 +29,11 @@ public class ModuleNotRegisteredExceptionTests : TestBase
     [Test]
     public async Task Module_Getting_Non_Registered_Module_Throws_Exception()
     {
-        var moduleFailedException = await Assert.ThrowsAsync<ModuleFailedException>(() =>
+        await Assert.ThrowsAsync<ModuleNotRegisteredException>(() =>
             TestPipelineHostBuilder.Create()
                 .AddModule<Module2>()
                 .ExecutePipelineAsync()
         );
-        await Assert.That(moduleFailedException.InnerException).Is.TypeOf<ModuleNotRegisteredException>();
     }
 
     [Test]
@@ -45,6 +44,6 @@ public class ModuleNotRegisteredExceptionTests : TestBase
                 .AddModule<Module1>()
                 .AddModule<Module2>()
                 .ExecutePipelineAsync()
-        ).Throws.Nothing();
+        ).ThrowsNothing();
     }
 }

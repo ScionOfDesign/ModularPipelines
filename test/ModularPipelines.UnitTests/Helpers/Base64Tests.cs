@@ -2,7 +2,6 @@ using ModularPipelines.Context;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests.Helpers;
 
@@ -24,12 +23,12 @@ public class Base64Tests : TestBase
 
         var moduleResult = await module;
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(moduleResult.ModuleResultType).Is.EqualTo(ModuleResultType.Success);
-            Assert.That(moduleResult.Exception).Is.Null();
-            Assert.That(moduleResult.Value).Is.Not.Null();
-        });
+            await Assert.That(moduleResult.ModuleResultType).IsEqualTo(ModuleResultType.Success);
+            await Assert.That(moduleResult.Exception).IsNull();
+            await Assert.That(moduleResult.Value).IsNotNull();
+        }
     }
 
     [Test]
@@ -38,7 +37,7 @@ public class Base64Tests : TestBase
         var module = await RunModule<ToBase64Module>();
 
         var moduleResult = await module;
-        await Assert.That(moduleResult.Value).Is.EqualTo("Rm9vIGJhciE=");
+        await Assert.That(moduleResult.Value).IsEqualTo("Rm9vIGJhciE=");
     }
 
     private class FromBase64Module : Module<string>
@@ -57,12 +56,12 @@ public class Base64Tests : TestBase
 
         var moduleResult = await module;
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(moduleResult.ModuleResultType).Is.EqualTo(ModuleResultType.Success);
-            Assert.That(moduleResult.Exception).Is.Null();
-            Assert.That(moduleResult.Value).Is.Not.Null();
-        });
+            await Assert.That(moduleResult.ModuleResultType).IsEqualTo(ModuleResultType.Success);
+            await Assert.That(moduleResult.Exception).IsNull();
+            await Assert.That(moduleResult.Value).IsNotNull();
+        }
     }
 
     [Test]
@@ -71,6 +70,6 @@ public class Base64Tests : TestBase
         var module = await RunModule<FromBase64Module>();
 
         var moduleResult = await module;
-        await Assert.That(moduleResult.Value).Is.EqualTo("Foo bar!");
+        await Assert.That(moduleResult.Value).IsEqualTo("Foo bar!");
     }
 }

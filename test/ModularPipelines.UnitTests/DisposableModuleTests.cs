@@ -1,7 +1,6 @@
 using ModularPipelines.Context;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -13,7 +12,7 @@ public class DisposableModuleTests
         var pipelineSummary = await TestPipelineHostBuilder.Create()
             .AddModule<DisposableModule>()
             .ExecutePipelineAsync();
-        await Assert.That(pipelineSummary.Modules.OfType<DisposableModule>().Single().IsDisposed).Is.True();
+        await Assert.That(pipelineSummary.Modules.OfType<DisposableModule>().Single().IsDisposed).IsTrue();
     }
 
     public class DisposableModule : Module, IDisposable

@@ -11,17 +11,20 @@ internal class PipelineExecutor : IPipelineExecutor
     private readonly IModuleExecutor _moduleExecutor;
     private readonly EngineCancellationToken _engineCancellationToken;
     private readonly ILogger<PipelineExecutor> _logger;
+    private readonly IExceptionContainer _exceptionContainer;
 
     public PipelineExecutor(
         IPipelineSetupExecutor pipelineSetupExecutor,
         IModuleExecutor moduleExecutor,
         EngineCancellationToken engineCancellationToken,
-        ILogger<PipelineExecutor> logger)
+        ILogger<PipelineExecutor> logger,
+        IExceptionContainer exceptionContainer)
     {
         _pipelineSetupExecutor = pipelineSetupExecutor;
         _moduleExecutor = moduleExecutor;
         _engineCancellationToken = engineCancellationToken;
         _logger = logger;
+        _exceptionContainer = exceptionContainer;
     }
 
     public async Task<PipelineSummary> ExecuteAsync(List<ModuleBase> runnableModules,
@@ -36,12 +39,6 @@ internal class PipelineExecutor : IPipelineExecutor
         {
             await _moduleExecutor.ExecuteAsync(runnableModules);
         }
-        catch
-        {
-            // Give time for the console to update modules to Failed
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
-            throw;
-        }
         finally
         {
             exception = await WaitForAlwaysRunModules(runnableModules);
@@ -52,12 +49,14 @@ internal class PipelineExecutor : IPipelineExecutor
 
             await _pipelineSetupExecutor.OnEndAsync(pipelineSummary);
         }
+        
+        _exceptionContainer.ThrowExceptions();
 
         if (exception != null)
         {
             throw exception;
         }
-
+        
         return pipelineSummary;
     }
 

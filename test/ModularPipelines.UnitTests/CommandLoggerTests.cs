@@ -4,20 +4,21 @@ using ModularPipelines.Context;
 using ModularPipelines.Enums;
 using ModularPipelines.Options;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
+using NReco.Logging.File;
 using Vertical.SpectreLogger.Options;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace ModularPipelines.UnitTests;
 
 public class CommandLoggerTests : TestBase
 {
-    [CombinativeTest]
+    [Test]
     public async Task Logs_As_Expected_With_Options(
-        [CombinativeValues(true, false)] bool logInput,
-        [CombinativeValues(true, false)] bool logOutput,
-        [CombinativeValues(true, false)] bool logError,
-        [CombinativeValues(true, false)] bool logExitCode,
-        [CombinativeValues(true, false)] bool logDuration)
+        [Matrix(true, false)] bool logInput,
+        [Matrix(true, false)] bool logOutput,
+        [Matrix(true, false)] bool logError,
+        [Matrix(true, false)] bool logExitCode,
+        [Matrix(true, false)] bool logDuration)
     {
         var file = await RunPowershellCommand("""
                                         echo Hello world!
@@ -28,69 +29,69 @@ public class CommandLoggerTests : TestBase
 
         if (!logInput && !logOutput && !logError && !logDuration && !logExitCode)
         {
-            await Assert.That(logFile).Does.Not.Contain("INFO	[ModularPipelines.Logging.CommandLogger]");
+            await Assert.That(logFile).DoesNotContain("INFO	[ModularPipelines.Logging.CommandLogger]");
             return;
         }
 
-        await Assert.That(logFile).Does.Contain("INFO	[ModularPipelines.Logging.CommandLogger]");
+        await Assert.That(logFile).Contains("INFO	[ModularPipelines.Logging.CommandLogger]");
 
         if (logInput)
         {
-            await Assert.That(logFile).Does.Contain("""
+            await Assert.That(logFile).Contains($"""
                                               ---Executing Command---
-                                              pwsh -Command "echo Hello world!
+                                              {Environment.CurrentDirectory}> pwsh -Command "echo Hello world!
                                               throw \"Error!\""
                                               """);
         }
         else
         {
-            await Assert.That(logFile).Does.Contain("""
+            await Assert.That(logFile).Contains($"""
                                               ---Executing Command---
-                                              ********
+                                              {Environment.CurrentDirectory}> ********
                                               """);
         }
 
         if (logOutput)
         {
-            await Assert.That(logFile).Does.Contain("---Command Result---");
+            await Assert.That(logFile).Contains("---Command Result---");
         }
         else
         {
-            await Assert.That(logFile).Does.Not.Contain("---Command Result---");
+            await Assert.That(logFile).DoesNotContain("---Command Result---");
         }
 
         if (logError)
         {
-            await Assert.That(logFile).Does.Contain("---Command Error---");
+            await Assert.That(logFile).Contains("---Command Error---");
         }
         else
         {
-            await Assert.That(logFile).Does.Not.Contain("---Command Error---");
+            await Assert.That(logFile).DoesNotContain("---Command Error---");
         }
 
         if (logDuration)
         {
-            await Assert.That(logFile).Does.Contain("---Duration");
+            await Assert.That(logFile).Contains("---Duration");
         }
         else
         {
-            await Assert.That(logFile).Does.Not.Contain("---Duration");
+            await Assert.That(logFile).DoesNotContain("---Duration");
         }
 
         if (logExitCode)
         {
-            await Assert.That(logFile).Does.Contain("---Exit Code");
+            await Assert.That(logFile).Contains("---Exit Code");
         }
         else
         {
-            await Assert.That(logFile).Does.Not.Contain("---Exit Code");
+            await Assert.That(logFile).DoesNotContain("---Exit Code");
         }
     }
 
     private async Task<string> RunPowershellCommand(string command, bool logInput, bool logOutput, bool logError,
         bool logExitCode, bool logDuration)
     {
-        var file = Path.Combine(Environment.CurrentDirectory, Guid.NewGuid().ToString("N") + ".txt");
+        var file = Path.Combine(TestContext.WorkingDirectory, Guid.NewGuid().ToString("N") + ".txt");
 
         var result = await GetService<ICommand>((_, collection) =>
         {

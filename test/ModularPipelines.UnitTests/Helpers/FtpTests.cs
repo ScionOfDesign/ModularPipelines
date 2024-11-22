@@ -3,7 +3,6 @@ using FluentFTP;
 using ModularPipelines.Ftp;
 using ModularPipelines.Ftp.Options;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 using Disposer = ModularPipelines.Helpers.Disposer;
 using File = ModularPipelines.FileSystem.File;
 
@@ -29,11 +28,11 @@ public class FtpTests : TestBase
 
         var fileContents = await localPath.ReadAsync();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(response).Is.EqualTo(FtpStatus.Success);
-            Assert.That(fileContents).Does.StartWith("6jack");
-        });
+            await Assert.That(response).IsEqualTo(FtpStatus.Success);
+            await Assert.That(fileContents).StartsWith("6jack");
+        }
     }
 
     [Test]
@@ -45,9 +44,9 @@ public class FtpTests : TestBase
         {
             ClientConfigurator = client => { },
         });
-        await Assert.That(client.IsDisposed).Is.False();
+        await Assert.That(client.IsDisposed).IsFalse();
 
         await Disposer.DisposeObjectAsync(ftp);
-        await Assert.That(client.IsDisposed).Is.True();
+        await Assert.That(client.IsDisposed).IsTrue();
     }
 }

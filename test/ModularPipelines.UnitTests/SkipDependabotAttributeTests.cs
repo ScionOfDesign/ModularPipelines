@@ -6,7 +6,6 @@ using ModularPipelines.GitHub.Attributes;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
 using Moq;
-using TUnit.Assertions.Extensions;
 using Status = ModularPipelines.Enums.Status;
 
 namespace ModularPipelines.UnitTests;
@@ -78,7 +77,7 @@ public class SkipDependabotAttributeTests : TestBase
             .ConfigureServices((_, collection) => collection.AddSingleton(environmentVariables.Object))
             .AddModule<Module1>()
             .ExecutePipelineAsync();
-        await Assert.That(pipelineSummary.Modules.First().Status).Is.EqualTo(Status.Successful);
+        await Assert.That(pipelineSummary.Modules.First().Status).IsEqualTo(Status.Successful);
     }
 
     [Test]
@@ -93,7 +92,7 @@ public class SkipDependabotAttributeTests : TestBase
             .ConfigureServices((_, collection) => collection.AddSingleton(environmentVariables.Object))
             .AddModule<Module1>()
             .ExecutePipelineAsync();
-        await Assert.That(pipelineSummary.Modules.First().Status).Is.EqualTo(Status.Skipped);
+        await Assert.That(pipelineSummary.Modules.First().Status).IsEqualTo(Status.Skipped);
     }
 
     [Test]
@@ -105,7 +104,7 @@ public class SkipDependabotAttributeTests : TestBase
             .ConfigureServices((_, collection) => collection.AddSingleton(environmentVariables.Object))
             .AddModule<Module2>()
             .ExecutePipelineAsync();
-        await Assert.That(pipelineSummary.Modules.First().Status).Is.EqualTo(Status.Successful);
+        await Assert.That(pipelineSummary.Modules.First().Status).IsEqualTo(Status.Successful);
     }
 
     [Test]
@@ -117,7 +116,7 @@ public class SkipDependabotAttributeTests : TestBase
             .ConfigureServices((_, collection) => collection.AddSingleton(environmentVariables.Object))
             .AddModule<Module3>()
             .ExecutePipelineAsync();
-        await Assert.That(pipelineSummary.Modules.First().Status).Is.EqualTo(Status.Skipped);
+        await Assert.That(pipelineSummary.Modules.First().Status).IsEqualTo(Status.Skipped);
     }
 
     [Test]
@@ -129,6 +128,6 @@ public class SkipDependabotAttributeTests : TestBase
             .ConfigureServices((_, collection) => collection.AddSingleton(environmentVariables.Object))
             .AddModule<Module4>()
             .ExecutePipelineAsync();
-        await Assert.That(pipelineSummary.Modules.First().Status).Is.EqualTo(Status.Successful);
+        await Assert.That(pipelineSummary.Modules.First().Status).IsEqualTo(Status.Successful);
     }
 }

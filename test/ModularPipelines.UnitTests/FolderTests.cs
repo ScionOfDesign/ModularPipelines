@@ -1,10 +1,15 @@
 using System.Globalization;
+using System.Text;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using ModularPipelines.Context;
 using ModularPipelines.Extensions;
 using ModularPipelines.FileSystem;
 using ModularPipelines.Git;
+using ModularPipelines.Git.Extensions;
+using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
 using ModularPipelines.UnitTests.Attributes;
-using TUnit.Assertions.Extensions;
 using File = System.IO.File;
 
 namespace ModularPipelines.UnitTests;
@@ -22,10 +27,20 @@ public class FolderTests : TestBase
             await File.WriteAllTextAsync(Path.Combine(folder, fileName), "Foo bar!");
         }
 
-        await Assert.That(folder.ListFiles().ToList()).Has.Count().EqualTo(10);
+        await Assert.That(folder.ListFiles().ToList()).HasCount().EqualTo(10);
 
         folder.Clean();
-        await Assert.That(folder.ListFiles().ToList()).Has.Count().EqualTo(0);
+        await Assert.That(folder.ListFiles().ToList()).HasCount().EqualTo(0);
+    }
+
+    private class FindFileModule : Module<ModularPipelines.FileSystem.File>
+    {
+        protected override async Task<ModularPipelines.FileSystem.File?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
+        {
+            await Task.CompletedTask;
+            
+            return context.Git().RootDirectory.FindFile(x => x.Name == "README.md");
+        }
     }
 
     [Test]
@@ -39,10 +54,10 @@ public class FolderTests : TestBase
             Directory.CreateDirectory(Path.Combine(folder, folderName));
         }
 
-        await Assert.That(folder.ListFolders().ToList()).Has.Count().EqualTo(10);
+        await Assert.That(folder.ListFolders().ToList()).HasCount().EqualTo(10);
 
         folder.Clean();
-        await Assert.That(folder.ListFolders().ToList()).Has.Count().EqualTo(0);
+        await Assert.That(folder.ListFolders().ToList()).HasCount().EqualTo(0);
     }
 
     [Test]
@@ -51,8 +66,27 @@ public class FolderTests : TestBase
         var git = await GetService<IGit>();
 
         var readme = git.RootDirectory.FindFile(x => x.Name == "README.md");
-        await Assert.That(readme).Is.Not.Null();
-        await Assert.That(readme!.Exists).Is.True();
+        await Assert.That(readme).IsNotNull();
+        await Assert.That(readme!.Exists).IsTrue();
+    }
+
+    [Test]
+    public async Task FindFileLogs()
+    {
+            var stringBuilder = new StringBuilder();
+
+            await TestPipelineHostBuilder.Create()
+                .ConfigureServices((_, collection) =>
+                {
+                    collection
+                        .AddSingleton<ILogger<FindFileModule>>(
+                            new StringLogger<FindFileModule>(stringBuilder))
+                        .AddModule<FindFileModule>();
+                })
+                .ExecutePipelineAsync();
+
+            var actualLogResult = stringBuilder.ToString().Trim();
+            await Assert.That(actualLogResult).Contains("x => x.Name == \"README.md\"");
     }
 
     [Test]
@@ -61,18 +95,18 @@ public class FolderTests : TestBase
         var git = await GetService<IGit>();
 
         var src = git.RootDirectory.FindFolder(x => x.Name == "src");
-        await Assert.That(src).Is.Not.Null();
-        await Assert.That(src!.Exists).Is.True();
+        await Assert.That(src).IsNotNull();
+        await Assert.That(src!.Exists).IsTrue();
     }
 
     [Test]
     public async Task Delete()
     {
         var folder = CreateRandomFolder();
-        await Assert.That(folder.Exists).Is.True();
+        await Assert.That(folder.Exists).IsTrue();
 
         folder.Delete();
-        await Assert.That(folder.Exists).Is.False();
+        await Assert.That(folder.Exists).IsFalse();
     }
 
     [Test]
@@ -88,22 +122,22 @@ public class FolderTests : TestBase
             await File.WriteAllTextAsync(Path.Combine(folder, fileName), "Foo bar!");
         }
 
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(folder.Exists).Is.True();
-            Assert.That(folder.ListFiles().ToList()).Has.Count().EqualTo(10);
-            Assert.That(folder2.Exists).Is.False();
-        });
+            await Assert.That(folder.Exists).IsTrue();
+            await Assert.That(folder.ListFiles().ToList()).HasCount().EqualTo(10);
+            await Assert.That(folder2.Exists).IsFalse();
+        }
 
         folder.MoveTo(folder2);
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(new Folder(folder.OriginalPath).Exists).Is.False();
-            Assert.That(folder.Exists).Is.True();
-            Assert.That(folder2.Exists).Is.True();
-            Assert.That(folder2.ListFiles().ToList()).Has.Count().EqualTo(10);
-        });
+            await Assert.That(new Folder(folder.OriginalPath).Exists).IsFalse();
+            await Assert.That(folder.Exists).IsTrue();
+            await Assert.That(folder2.Exists).IsTrue();
+            await Assert.That(folder2.ListFiles().ToList()).HasCount().EqualTo(10);
+        }
     }
 
     [Test]
@@ -119,22 +153,22 @@ public class FolderTests : TestBase
             await File.WriteAllTextAsync(Path.Combine(folder, fileName), "Foo bar!");
         }
 
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(folder.Exists).Is.True();
-            Assert.That(folder.ListFiles().ToList()).Has.Count().EqualTo(10);
-            Assert.That(folder2.Exists).Is.False();
-        });
+            await Assert.That(folder.Exists).IsTrue();
+            await Assert.That(folder.ListFiles().ToList()).HasCount().EqualTo(10);
+            await Assert.That(folder2.Exists).IsFalse();
+        }
 
         folder.CopyTo(folder2);
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(folder.Exists).Is.True();
-            Assert.That(folder.ListFiles().ToList()).Has.Count().EqualTo(10);
-            Assert.That(folder2.Exists).Is.True();
-            Assert.That(folder2.ListFiles().ToList()).Has.Count().EqualTo(10);
-        });
+            await Assert.That(folder.Exists).IsTrue();
+            await Assert.That(folder.ListFiles().ToList()).HasCount().EqualTo(10);
+            await Assert.That(folder2.Exists).IsTrue();
+            await Assert.That(folder2.ListFiles().ToList()).HasCount().EqualTo(10);
+        }
     }
 
     [Test]
@@ -142,20 +176,20 @@ public class FolderTests : TestBase
     {
         var folder = CreateRandomFolder();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(folder.Exists).Is.True();
-            Assert.That(folder.Attributes.ToString()).Is.Not.Null().And.Is.Not.Empty();
-            Assert.That(folder.Path).Is.Not.Null().And.Is.Not.Empty();
-            Assert.That(folder.OriginalPath).Is.Not.Null().And.Is.Not.Empty();
-            Assert.That(folder.Extension).Is.Empty();
-            Assert.That(folder.Parent?.ToString()!).Is.Not.Null().And.Is.Not.Empty();
-            Assert.That(folder.Root.ToString()).Is.Not.Null().And.Is.Not.Empty();
-            Assert.That(folder.CreationTime.ToString(CultureInfo.InvariantCulture)).Is.Not.Null().And.Is.Not.Empty();
-            Assert.That(folder.LastWriteTimeUtc.ToString(CultureInfo.InvariantCulture)).Is.Not.Null().And.Is.Not.Empty();
-            Assert.That(folder.Hidden).Is.False();
-            Assert.That(folder.Name).Is.Not.Null().And.Is.Not.Empty();
-        });
+            await Assert.That(folder.Exists).IsTrue();
+            await Assert.That(folder.Attributes.ToString()).IsNotNull().And.IsNotEmpty();
+            await Assert.That(folder.Path).IsNotNull().And.IsNotEmpty();
+            await Assert.That(folder.OriginalPath).IsNotNull().And.IsNotEmpty();
+            await Assert.That(folder.Extension).IsEmpty();
+            await Assert.That(folder.Parent?.ToString()!).IsNotNull().And.IsNotEmpty();
+            await Assert.That(folder.Root.ToString()).IsNotNull().And.IsNotEmpty();
+            await Assert.That(folder.CreationTime.ToString(CultureInfo.InvariantCulture)).IsNotNull().And.IsNotEmpty();
+            await Assert.That(folder.LastWriteTimeUtc.ToString(CultureInfo.InvariantCulture)).IsNotNull().And.IsNotEmpty();
+            await Assert.That(folder.Hidden).IsFalse();
+            await Assert.That(folder.Name).IsNotNull().And.IsNotEmpty();
+        }
     }
 
     [Test]
@@ -163,10 +197,10 @@ public class FolderTests : TestBase
     {
         var folder = new Folder(Path.GetRandomFileName());
 
-        await Assert.That(folder.Exists).Is.False();
+        await Assert.That(folder.Exists).IsFalse();
 
         folder.Create();
-        await Assert.That(folder.Exists).Is.True();
+        await Assert.That(folder.Exists).IsTrue();
     }
 
     [Test]
@@ -175,10 +209,10 @@ public class FolderTests : TestBase
         var folder = CreateRandomFolder();
 
         var fileBeforeCreation = folder.GetFile("Foo.txt");
-        await Assert.That(fileBeforeCreation.Exists).Is.False();
+        await Assert.That(fileBeforeCreation.Exists).IsFalse();
 
         var file = folder.CreateFile("Foo.txt");
-        await Assert.That(file.Exists).Is.True();
+        await Assert.That(file.Exists).IsTrue();
     }
 
     [Test]
@@ -187,16 +221,16 @@ public class FolderTests : TestBase
         var folder = CreateRandomFolder();
 
         var folderBeforeCreation = folder.GetFolder("Foo");
-        await Assert.That(folderBeforeCreation.Exists).Is.False();
+        await Assert.That(folderBeforeCreation.Exists).IsFalse();
 
         var subfolder = folder.CreateFolder("Foo");
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(subfolder.Exists).Is.True();
-            Assert.That(subfolder.Path).Is.Not.EqualTo(folder.Path);
-            Assert.That(subfolder.Parent).Is.EqualTo(folder);
-        });
+            await Assert.That(subfolder.Exists).IsTrue();
+            await Assert.That(subfolder.Path).IsNotEqualTo(folder.Path);
+            await Assert.That(subfolder.Parent).IsEqualTo(folder);
+        }
     }
 
     [Test]
@@ -205,7 +239,7 @@ public class FolderTests : TestBase
         DirectoryInfo? directoryInfo = null;
 
         Folder? file = directoryInfo;
-        await Assert.That(file).Is.Null();
+        await Assert.That(file).IsNull();
     }
 
     [Test]
@@ -214,7 +248,7 @@ public class FolderTests : TestBase
         string? fileInfo = null;
 
         Folder? file = fileInfo;
-        await Assert.That(file).Is.Null();
+        await Assert.That(file).IsNull();
     }
 
     [Test]
@@ -223,7 +257,7 @@ public class FolderTests : TestBase
         var directoryInfo = new DirectoryInfo(Path.GetTempFileName());
 
         Folder file = directoryInfo;
-        await Assert.That(file).Is.Not.Null();
+        await Assert.That(file).IsNotNull();
     }
 
     [Test]
@@ -232,7 +266,7 @@ public class FolderTests : TestBase
         var path = Path.GetTempFileName();
 
         Folder file = path!;
-        await Assert.That(file).Is.Not.Null();
+        await Assert.That(file).IsNotNull();
     }
 
     [Test]
@@ -240,11 +274,11 @@ public class FolderTests : TestBase
     public async Task Attributes()
     {
         var folder = CreateRandomFolder();
-        await Assert.That(folder.Attributes.HasFlag(FileAttributes.Hidden)).Is.False();
+        await Assert.That(folder.Attributes.HasFlag(FileAttributes.Hidden)).IsFalse();
 
         folder.Attributes = FileAttributes.Hidden;
 
-        await Assert.That(folder.Attributes.HasFlag(FileAttributes.Hidden)).Is.True();
+        await Assert.That(folder.Attributes.HasFlag(FileAttributes.Hidden)).IsTrue();
     }
 
     [Test]
@@ -254,13 +288,13 @@ public class FolderTests : TestBase
         var folder = new Folder(path);
         var folder2 = new Folder(path);
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(folder).Is.EqualTo(folder2);
-            Assert.That(folder.GetHashCode()).Is.EqualTo(folder2.GetHashCode());
-            Assert.That(folder == folder2).Is.True();
-            Assert.That(folder != folder2).Is.False();
-        });
+            await Assert.That(folder).IsEqualTo(folder2);
+            await Assert.That(folder.GetHashCode()).IsEqualTo(folder2.GetHashCode());
+            await Assert.That(folder == folder2).IsTrue();
+            await Assert.That(folder != folder2).IsFalse();
+        }
     }
 
     [Test]
@@ -269,34 +303,34 @@ public class FolderTests : TestBase
         var folder = new Folder(Path.GetRandomFileName());
         var folder2 = new Folder(Path.GetRandomFileName());
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(folder).Is.Not.EqualTo(folder2);
-            Assert.That(folder.GetHashCode()).Is.Not.EqualTo(folder2.GetHashCode());
-            Assert.That(folder == folder2).Is.False();
-            Assert.That(folder != folder2).Is.True();
-        });
+            await Assert.That(folder).IsNotEqualTo(folder2);
+            await Assert.That(folder.GetHashCode()).IsNotEqualTo(folder2.GetHashCode());
+            await Assert.That(folder == folder2).IsFalse();
+            await Assert.That(folder != folder2).IsTrue();
+        }
     }
 
     [Test]
     public async Task AssertExists()
     {
         var folder = (Folder?) CreateRandomFolder();
-        await Assert.That(() => folder.AssertExists()).Throws.Nothing();
+        await Assert.That(() => folder.AssertExists()).ThrowsNothing();
     }
 
     [Test]
     public async Task AssertExists_ThrowsWhenNotExists()
     {
         Folder folder = ModularPipelines.FileSystem.File.GetNewTemporaryFilePath().Path!;
-        await Assert.That(() => folder.AssertExists()).Throws.Exception().OfType<DirectoryNotFoundException>();
+        await Assert.That(() => folder.AssertExists()).Throws<DirectoryNotFoundException>();
     }
 
     [Test]
     public async Task AssertExists_ThrowsWhenNull()
     {
         var folder = null as Folder;
-        await Assert.That(() => folder.AssertExists()).Throws.Exception().OfType<DirectoryNotFoundException>();
+        await Assert.That(() => folder.AssertExists()).Throws<DirectoryNotFoundException>();
     }
 
     [Test, WindowsOnlyTest]
@@ -305,7 +339,7 @@ public class FolderTests : TestBase
         await Assert.That(() => new Folder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
             .GetFolder("AppData")
             ?.FindFile(x => x.Name.Contains(Guid.NewGuid().ToString()), exclude => exclude.Name.StartsWith('.'))
-            ).Throws.Nothing();
+            ).ThrowsNothing();
     }
 
     [Test, WindowsOnlyTest]
@@ -313,7 +347,7 @@ public class FolderTests : TestBase
     {
         await Assert.That(() => new Folder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
             ?.GetFiles(Guid.NewGuid().ToString()))
-            .Throws.Nothing();
+            .ThrowsNothing();
     }
 
     [Test, WindowsOnlyTest]
@@ -322,7 +356,7 @@ public class FolderTests : TestBase
         await Assert.That(() => new Folder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
                 .GetFolder("AppData")
             ?.FindFolder(x => x.Name.Contains(Guid.NewGuid().ToString()), exclude => exclude.Name.StartsWith('.')))
-            .Throws.Nothing();
+            .ThrowsNothing();
     }
 
     private static Folder CreateRandomFolder()

@@ -3,10 +3,10 @@ using ModularPipelines.Exceptions;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
 using Polly.Retry;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
+[Retry(3)]
 public class RetryTests : TestBase
 {
     private class SuccessModule : Module
@@ -82,11 +82,11 @@ public class RetryTests : TestBase
 
         var module = pipelineSummary.Modules.OfType<SuccessModule>().First();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(module.ExecutionCount).Is.EqualTo(1);
-            Assert.That(module.Exception).Is.Null();
-        });
+            await Assert.That(module.ExecutionCount).IsEqualTo(1);
+            await Assert.That(module.Exception).IsNull();
+        }
     }
 
     [Test]
@@ -102,11 +102,11 @@ public class RetryTests : TestBase
 
         var module = pipelineSummary.Modules.OfType<FailedModule>().First();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(module.ExecutionCount).Is.EqualTo(4);
-            Assert.That(module.Exception).Is.Null();
-        });
+            await Assert.That(module.ExecutionCount).IsEqualTo(4);
+            await Assert.That(module.Exception).IsNull();
+        }
     }
 
     [Test]
@@ -118,11 +118,11 @@ public class RetryTests : TestBase
 
         var module = pipelineSummary.Modules.OfType<FailedModuleWithCustomRetryPolicy>().First();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(module.ExecutionCount).Is.EqualTo(4);
-            Assert.That(module.Exception).Is.Null();
-        });
+            await Assert.That(module.ExecutionCount).IsEqualTo(4);
+            await Assert.That(module.Exception).IsNull();
+        }
     }
 
     [Test]
@@ -138,11 +138,11 @@ public class RetryTests : TestBase
 
         var module = moduleFailedException?.Module as FailedModule;
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(module?.ExecutionCount).Is.EqualTo(1);
-            Assert.That(module!.Exception).Is.Not.Null();
-        });
+            await Assert.That(module?.ExecutionCount).IsEqualTo(1);
+            await Assert.That(module!.Exception).IsNotNull();
+        }
     }
 
     [Test]
@@ -155,6 +155,6 @@ public class RetryTests : TestBase
             })
             .AddModule<FailedModuleWithTimeout>()
             .ExecutePipelineAsync());
-        await Assert.That(moduleFailedException?.InnerException).Is.TypeOf<ModuleTimeoutException>();
+        await Assert.That(moduleFailedException?.InnerException).IsTypeOf(typeof(ModuleTimeoutException));
     }
 }

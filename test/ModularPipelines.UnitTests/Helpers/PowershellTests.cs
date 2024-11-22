@@ -2,7 +2,6 @@ using ModularPipelines.Context;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests.Helpers;
 
@@ -23,12 +22,12 @@ public class PowershellTests : TestBase
 
         var moduleResult = await module;
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(moduleResult.ModuleResultType).Is.EqualTo(ModuleResultType.Success);
-            Assert.That(moduleResult.Exception).Is.Null();
-            Assert.That(moduleResult.Value).Is.Not.Null();
-        });
+            await Assert.That(moduleResult.ModuleResultType).IsEqualTo(ModuleResultType.Success);
+            await Assert.That(moduleResult.Exception).IsNull();
+            await Assert.That(moduleResult.Value).IsNotNull();
+        }
     }
 
     [Test]
@@ -38,10 +37,10 @@ public class PowershellTests : TestBase
 
         var moduleResult = await module;
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(moduleResult.Value!.StandardError).Is.Null().Or.Is.Empty();
-            Assert.That(moduleResult.Value.StandardOutput.Trim()).Is.EqualTo("Foo bar!");
-        });
+            await Assert.That(moduleResult.Value!.StandardError).IsNull().Or.IsEmpty();
+            await Assert.That(moduleResult.Value.StandardOutput.Trim()).IsEqualTo("Foo bar!");
+        }
     }
 }

@@ -1,11 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using ModularPipelines.Context;
-using ModularPipelines.Engine;
 using ModularPipelines.Exceptions;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
+using EngineCancellationToken = ModularPipelines.Engine.EngineCancellationToken;
 
 namespace ModularPipelines.UnitTests;
 
@@ -28,7 +27,7 @@ public class NonIgnoredFailureTests : TestBase
         var serviceProvider = exception.Module.Context.Get<IServiceProvider>()!;
         var engineCancellationToken = serviceProvider.GetRequiredService<EngineCancellationToken>();
 
-        await Task.Delay(TimeSpan.FromSeconds(2));
-        await Assert.That(engineCancellationToken.IsCancellationRequested).Is.True();
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Assert.That(engineCancellationToken.IsCancellationRequested).IsTrue();
     }
 }

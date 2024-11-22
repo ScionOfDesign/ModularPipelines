@@ -3,7 +3,6 @@ using ModularPipelines.Context;
 using ModularPipelines.Modules;
 using ModularPipelines.Options;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 using Status = ModularPipelines.Enums.Status;
 
 namespace ModularPipelines.UnitTests;
@@ -26,7 +25,7 @@ public class FailedPipelineTests : TestBase
         }
     }
 
-    [DependsOn<Module2>(IgnoreIfNotRegistered = true)]
+    [ModularPipelines.Attributes.DependsOn<Module2>(IgnoreIfNotRegistered = true)]
     private class Module3 : Module
     {
         protected override async Task<IDictionary<string, object>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
@@ -36,8 +35,9 @@ public class FailedPipelineTests : TestBase
         }
     }
 
-    [DataDrivenTest(ExecutionMode.StopOnFirstException)]
-    [DataDrivenTest(ExecutionMode.WaitForAllModules)]
+    [Test]
+    [Arguments(ExecutionMode.StopOnFirstException)]
+    [Arguments(ExecutionMode.WaitForAllModules)]
     public async Task Given_Failing_Module_With_Dependent_Module_When_Fail_Fast_Then_Failures_Propagate(ExecutionMode executionMode)
     {
         await Assert.That(async () => await TestPipelineHostBuilder.Create()
@@ -46,12 +46,13 @@ public class FailedPipelineTests : TestBase
                 .AddModule<Module1>()
                 .AddModule<Module2>()
                 .AddModule<Module3>()
-                .ExecutePipelineAsync()).Throws.Exception()
-            .OfAnyType();
+                .ExecutePipelineAsync()).ThrowsException()
+            ;
     }
 
-    [DataDrivenTest(ExecutionMode.StopOnFirstException)]
-    [DataDrivenTest(ExecutionMode.WaitForAllModules)]
+    [Test]
+    [Arguments(ExecutionMode.StopOnFirstException)]
+    [Arguments(ExecutionMode.WaitForAllModules)]
     public async Task Given_Failing_Module_When_Fail_Fast_Then_Failures_Propagate(ExecutionMode executionMode)
     {
         await Assert.That(async () => await TestPipelineHostBuilder.Create()
@@ -60,11 +61,12 @@ public class FailedPipelineTests : TestBase
                 .AddModule<Module1>()
                 .AddModule<Module2>()
                 .ExecutePipelineAsync()).
-            Throws.Exception().OfAnyType();
+            ThrowsException();
     }
 
-    [DataDrivenTest(ExecutionMode.StopOnFirstException)]
-    [DataDrivenTest(ExecutionMode.WaitForAllModules)]
+    [Test]
+    [Arguments(ExecutionMode.StopOnFirstException)]
+    [Arguments(ExecutionMode.WaitForAllModules)]
     public async Task Given_No_Failing_Module_Then_No_Exceptions(ExecutionMode executionMode)
     {
         var pipelineSummary = await TestPipelineHostBuilder.Create()
@@ -73,6 +75,6 @@ public class FailedPipelineTests : TestBase
                 .AddModule<Module1>()
                 .AddModule<Module3>()
                 .ExecutePipelineAsync();
-        await Assert.That(pipelineSummary.Status).Is.EqualTo(Status.Successful);
+        await Assert.That(pipelineSummary.Status).IsEqualTo(Status.Successful);
     }
 }

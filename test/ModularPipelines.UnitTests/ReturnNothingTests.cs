@@ -2,7 +2,6 @@ using ModularPipelines.Context;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests;
 
@@ -66,12 +65,12 @@ public class ReturnNothingTests : TestBase
 
     private static async Task Assert(ModuleResult<CommandResult> result)
     {
-        await TUnit.Assertions.Assert.Multiple(() =>
+        using (TUnit.Assertions.Assert.Multiple())
         {
-            TUnit.Assertions.Assert.That(result.HasValue).Is.False();
-            TUnit.Assertions.Assert.That(result.ModuleResultType).Is.EqualTo(ModuleResultType.Success);
-            TUnit.Assertions.Assert.That(result.Value).Is.Null();
-            TUnit.Assertions.Assert.That(result.Exception).Is.Null();
-        });
+            await TUnit.Assertions.Assert.That(result.HasValue).IsFalse();
+            await TUnit.Assertions.Assert.That(result.ModuleResultType).IsEqualTo(ModuleResultType.Success);
+            await TUnit.Assertions.Assert.That(result.Value).IsNull();
+            await TUnit.Assertions.Assert.That(result.Exception).IsNull();
+        }
     }
 }

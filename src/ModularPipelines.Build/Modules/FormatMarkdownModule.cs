@@ -6,6 +6,7 @@ using ModularPipelines.Context;
 using ModularPipelines.Extensions;
 using ModularPipelines.Git.Extensions;
 using ModularPipelines.GitHub.Attributes;
+using ModularPipelines.GitHub.Extensions;
 using ModularPipelines.Models;
 using ModularPipelines.Modules;
 using ModularPipelines.Node.Extensions;
@@ -32,7 +33,7 @@ public class FormatMarkdownModule : Module<CommandResult>
     /// <inheritdoc/>
     protected override Task<SkipDecision> ShouldSkip(IPipelineContext context)
     {
-        if (string.IsNullOrEmpty(_gitHubSettings.Value.PullRequest?.Branch))
+        if (context.GitHub().EnvironmentVariables.EventName != "pull_request")
         {
             return SkipDecision.Skip("Not a pull request").AsTask();
         }
@@ -50,13 +51,13 @@ public class FormatMarkdownModule : Module<CommandResult>
     {
         await context.Node().Npm.Install(new NpmInstallOptions
         {
-            Arguments = new[]
-            {
+            Arguments =
+            [
                 "remark-cli",
                 "remark-preset-lint-consistent",
                 "remark-preset-lint-recommended",
-                "remark-lint-list-item-indent",
-            },
+                "remark-lint-list-item-indent"
+            ],
             SaveDev = true,
         }, cancellationToken);
 
@@ -71,15 +72,15 @@ public class FormatMarkdownModule : Module<CommandResult>
         {
             await context.Node().Npx.ExecuteAsync(new NpxOptions
             {
-                Arguments = new[]
-                {
+                Arguments =
+                [
                     "remark",
                     fileToFormat,
                     "--use", "remark-lint",
                     "--use", "remark-preset-lint-consistent",
                     "--use", "remark-preset-lint-recommended",
-                    "--output",
-                },
+                    "--output"
+                ],
             }, cancellationToken);
         }
 
@@ -88,7 +89,7 @@ public class FormatMarkdownModule : Module<CommandResult>
             return await NothingAsync();
         }
 
-        var branchTriggeringPullRequest = _gitHubSettings.Value.PullRequest!.Branch!;
+        var branchTriggeringPullRequest = context.GitHub().EnvironmentVariables.HeadRef!;
 
         await GitHelpers.SetUserCommitInformation(context, cancellationToken);
 

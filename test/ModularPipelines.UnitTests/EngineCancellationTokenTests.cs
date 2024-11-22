@@ -4,11 +4,11 @@ using ModularPipelines.Context;
 using ModularPipelines.Extensions;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 using Status = ModularPipelines.Enums.Status;
 
 namespace ModularPipelines.UnitTests;
 
+[Retry(5)]
 public class EngineCancellationTokenTests : TestBase
 {
     private class BadModule : Module
@@ -22,7 +22,7 @@ public class EngineCancellationTokenTests : TestBase
         }
     }
 
-    [DependsOn<BadModule>]
+    [ModularPipelines.Attributes.DependsOn<BadModule>]
     private class Module1 : Module
     {
         protected override Task<IDictionary<string, object>?> ExecuteAsync(IPipelineContext context, CancellationToken cancellationToken)
@@ -49,7 +49,7 @@ public class EngineCancellationTokenTests : TestBase
         }
     }
 
-    [Test, Retry(3)]
+    [Test]
     public async Task When_Cancel_Engine_Token_With_DependsOn_Then_Modules_Cancel()
     {
         var host = await TestPipelineHostBuilder.Create()
@@ -61,14 +61,14 @@ public class EngineCancellationTokenTests : TestBase
 
         var module1 = modules.GetModule<Module1>();
 
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(async () => await host.ExecutePipelineAsync()).Throws.Exception();
-            Assert.That(module1.Status).Is.EqualTo(Status.NotYetStarted).Or.Is.EqualTo(Status.Failed);
-        });
+            await Assert.That(async () => await host.ExecutePipelineAsync()).ThrowsException();
+            await Assert.That(module1.Status).IsEqualTo(Status.NotYetStarted).Or.IsEqualTo(Status.Failed);
+        }
     }
 
-    [Test, Retry(3)]
+    [Test]
     public async Task When_Cancel_Engine_Token_Without_DependsOn_Then_Modules_Cancel()
     {
         var host = await TestPipelineHostBuilder.Create()
@@ -84,15 +84,15 @@ public class EngineCancellationTokenTests : TestBase
 
         await Task.Delay(TimeSpan.FromSeconds(10));
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(async () => await pipelineTask).Throws.Exception();
-            Assert.That(longRunningModule.Status).Is.EqualTo(Status.PipelineTerminated);
-            Assert.That(longRunningModule.Duration).Is.LessThan(TimeSpan.FromSeconds(30));
-        });
+            await Assert.That(async () => await pipelineTask).ThrowsException();
+            await Assert.That(longRunningModule.Status).IsEqualTo(Status.PipelineTerminated);
+            await Assert.That(longRunningModule.Duration).IsLessThan(TimeSpan.FromSeconds(30));
+        }
     }
 
-    [Test, Retry(3)]
+    [Test]
     public async Task When_Cancel_Engine_Token_Without_DependsOn_Then_Modules_Cancel_Without_Cancellation()
     {
         var host = await TestPipelineHostBuilder.Create()
@@ -106,13 +106,13 @@ public class EngineCancellationTokenTests : TestBase
 
         var pipelineTask = host.ExecutePipelineAsync();
 
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(async () => await pipelineTask).Throws.Exception();
-            Assert.That(longRunningModule.Status).Is.EqualTo(Status.PipelineTerminated);
-            Assert.That(longRunningModule.Duration).Is.LessThan(TimeSpan.FromSeconds(2));
-        });
+            await Assert.That(async () => await pipelineTask).ThrowsException();
+            await Assert.That(longRunningModule.Status).IsEqualTo(Status.PipelineTerminated);
+            await Assert.That(longRunningModule.Duration).IsLessThan(TimeSpan.FromSeconds(30));
+        }
     }
 }

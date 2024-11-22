@@ -30,10 +30,15 @@ public class CodacyCodeCoverageUploader : Module<CommandResult>
 
         if (mergeCoverageModuleResult.Value == null)
         {
-            return true;
+            return "Merge coverage has no result";
         }
 
-        return string.IsNullOrEmpty(_options.Value.ApiKey);
+        if (string.IsNullOrEmpty(_options.Value.ApiKey))
+        {
+            return "No Codacy API key was found";
+        }
+
+        return false;
     }
 
     /// <inheritdoc/>
@@ -53,7 +58,7 @@ public class CodacyCodeCoverageUploader : Module<CommandResult>
 
         return await context.Bash.FromFile(new BashFileOptions(scriptFile)
         {
-            Arguments = new[] { "report", "-r", coverageOutputFile.Path },
+            Arguments = ["report", "-r", coverageOutputFile.Path],
             EnvironmentVariables = new Dictionary<string, string?>
             {
                 ["CODACY_PROJECT_TOKEN"] = _options.Value.ApiKey,

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ModularPipelines.Context;
 using ModularPipelines.Engine;
+using ModularPipelines.Extensions;
 
 namespace ModularPipelines.GitHub.Extensions;
 
@@ -22,6 +23,8 @@ public static class GitHubExtensions
     {
         services.TryAddScoped<IGitHub, GitHub>();
         services.TryAddScoped<IGitHubEnvironmentVariables, GitHubEnvironmentVariables>();
+        services.TryAddSingleton<IGitHubRepositoryInfo, GitHubRepositoryInfo>();
+        services.AddPipelineGlobalHooks<GitHubMarkdownSummaryGenerator>();
         return services;
     }
 

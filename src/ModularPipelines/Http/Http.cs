@@ -34,6 +34,11 @@ internal class Http : IHttp, IDisposable
 
         var response = await httpClient.SendAsync(httpOptions.HttpRequestMessage, cancellationToken);
 
+        if (!httpOptions.ThrowOnNonSuccessStatusCode)
+        {
+            return response;
+        }
+        
         return response.EnsureSuccessStatusCode();
     }
 
@@ -41,8 +46,9 @@ internal class Http : IHttp, IDisposable
     {
         return _loggingHttpClients.GetOrAdd(loggingType, _ =>
         {
+            var moduleLogger = _moduleLoggerProvider.GetLogger();
             var serviceCollection = new ServiceCollection()
-                .AddSingleton(_moduleLoggerProvider)
+                .AddSingleton(moduleLogger)
                 .AddTransient<SuccessHttpHandler>();
 
             var httpClientBuilder = serviceCollection
@@ -117,6 +123,11 @@ internal class Http : IHttp, IDisposable
         if (httpOptions.LoggingType.HasFlag(HttpLoggingType.Response))
         {
             await HttpLogger.PrintResponse(response, logger);
+        }
+        
+        if (!httpOptions.ThrowOnNonSuccessStatusCode)
+        {
+            return response;
         }
 
         return response.EnsureSuccessStatusCode();

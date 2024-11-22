@@ -4,7 +4,7 @@ using MimeKit;
 using ModularPipelines.Email;
 using ModularPipelines.Email.Options;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
+using TUnit.Core.Exceptions;
 
 namespace ModularPipelines.UnitTests.Helpers;
 
@@ -20,14 +20,13 @@ public class EmailTests : TestBase
 
         if (string.IsNullOrEmpty(emailPassword))
         {
-            TestContext.Current!.SkipTest("No email password");
-            return;
+            throw new SkipTestException("No email password");
         }
 
         var response = await email.SendAsync(
             new EmailSendOptions(
                 From: EmailAddress,
-                To: new[] { EmailAddress },
+                To: [EmailAddress],
                 Subject: "Email Test",
                 Body: new TextPart { Text = "This is an email test." },
                 SmtpServerHost: "smtp-relay.brevo.com"
@@ -41,6 +40,6 @@ public class EmailTests : TestBase
                 },
             }
         );
-        await Assert.That(response).Does.Contain("queued");
+        await Assert.That(response).Contains("queued");
     }
 }

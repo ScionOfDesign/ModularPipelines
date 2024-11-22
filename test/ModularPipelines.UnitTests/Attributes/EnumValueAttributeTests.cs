@@ -1,14 +1,14 @@
-using ModularPipelines.Attributes;
+﻿using ModularPipelines.Attributes;
 using ModularPipelines.Helpers;
-using TUnit.Assertions.Extensions;
 
 namespace ModularPipelines.UnitTests.Attributes;
 
 public class EnumValueAttributeTests
 {
-    [DataDrivenTest(Number.One, "1")]
-    [DataDrivenTest(Number.Two, "2")]
-    [DataDrivenTest(Number.Three, "3")]
+    [Test]
+    [Arguments(Number.One, "1")]
+    [Arguments(Number.Two, "2")]
+    [Arguments(Number.Three, "3")]
     public async Task Can_Parse_EnumValueAttribute(Number number, string expected)
     {
         var options = new NumberWrapper
@@ -19,9 +19,9 @@ public class EnumValueAttributeTests
         var list = new List<string>();
 
         CommandOptionsObjectArgumentParser.AddArgumentsFromOptionsObject(list, options);
-        await Assert.That(list).Does.Contain("--number");
-        await Assert.That(list).Does.Contain(expected);
-        await Assert.That(list).Is.EquivalentTo(new List<string> { "--number", expected });
+        await Assert.That(list).Contains("--number");
+        await Assert.That(list).Contains(expected);
+        await Assert.That(list).IsEquivalentCollectionTo(["--number", expected]);
     }
 
     public enum Number

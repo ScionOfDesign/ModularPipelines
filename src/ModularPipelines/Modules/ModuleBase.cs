@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using ModularPipelines.Attributes;
@@ -34,9 +36,9 @@ public abstract partial class ModuleBase : ITypeDiscriminator
 
     internal bool IsStarted { get; private protected set; }
 
-    internal List<DependsOnAttribute> DependentModules { get; } = [];
+    internal List<Type> DependentModules { get; } = [];
 
-    internal abstract IWaitHandler WaitHandler { get; }
+    internal abstract IEnumerable<(Type DependencyType, bool IgnoreIfNotRegistered)> GetModuleDependencies();
 
     internal abstract ICancellationHandler CancellationHandler { get; }
 
@@ -47,7 +49,9 @@ public abstract partial class ModuleBase : ITypeDiscriminator
     internal abstract IStatusHandler StatusHandler { get; }
 
     internal abstract IErrorHandler ErrorHandler { get; }
-
+    
+    internal abstract void TryCancel();
+    
     private IPipelineContext? _context; // Late Initialisation
 
     /// <summary>
@@ -80,9 +84,13 @@ public abstract partial class ModuleBase : ITypeDiscriminator
     internal SkipDecision SkipResult { get; set; } = SkipDecision.DoNotSkip;
 
     internal abstract Task ExecutionTask { get; }
+    
+    internal abstract Task StartInternal();
 
     internal readonly CancellationTokenSource ModuleCancellationTokenSource = new();
 
+    internal readonly Stopwatch Stopwatch = new();
+    
     /// <summary>
     /// Gets the start time of the module.
     /// </summary>
@@ -111,9 +119,12 @@ public abstract partial class ModuleBase : ITypeDiscriminator
 
     internal abstract ModuleBase Initialize(IPipelineContext context);
 
+    internal readonly object SubModuleBasesLock = new();
     internal readonly List<SubModuleBase> SubModuleBases = new();
 
     internal EventHandler<SubModuleBase>? OnSubModuleCreated;
+    
+    internal abstract Task<IModuleResult> GetModuleResult(); 
 
     /// <summary>
     /// Starts a Sub Module which will display in the pipeline progress in the console.
@@ -122,15 +133,32 @@ public abstract partial class ModuleBase : ITypeDiscriminator
     /// <param name="name">The name of the submodule.</param>
     /// <param name="action">The delegate that the submodule should execute.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected async Task<T> SubModule<T>(string name, Func<Task<T>> action)
+    protected Task<T> SubModule<T>(string name, Func<Task<T>> action)
     {
-        var submodule = new SubModule<T>(GetType(), name, action);
+        lock (SubModuleBasesLock)
+        {
+            var existingSubModule = SubModuleBases.Find(x => x.Name == name);
+            if (existingSubModule != null)
+            {
+                if (existingSubModule.Status == Status.Successful && existingSubModule is SubModule<T> typedSubmodule)
+                {
+                    return typedSubmodule.SubModuleResultTaskCompletionSource.Task;
+                }
 
-        OnSubModuleCreated?.Invoke(this, submodule);
+                if (existingSubModule.Status is Status.NotYetStarted or Status.Processing)
+                {
+                    throw new Exception("Use Distinct names for SubModules");
+                }
+            }
 
-        SubModuleBases.Add(submodule);
+            var submodule = new SubModule<T>(GetType(), name);
 
-        return await submodule.Task;
+            SubModuleBases.Add(submodule);
+
+            OnSubModuleCreated?.Invoke(this, submodule);
+
+            return submodule.Execute(action);
+        }
     }
 
     /// <summary>
@@ -141,11 +169,7 @@ public abstract partial class ModuleBase : ITypeDiscriminator
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
     protected async Task SubModule(string name, Action action)
     {
-        await SubModule(name, () =>
-        {
-            action();
-            return Task.CompletedTask;
-        });
+        await SubModule(name, () => Task.Run(action));
     }
 
     /// <summary>
@@ -156,7 +180,7 @@ public abstract partial class ModuleBase : ITypeDiscriminator
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
     protected async Task<T> SubModule<T>(string name, Func<T> action)
     {
-        return await SubModule(name, () => Task.FromResult(action()));
+        return await SubModule(name, () => Task.Run(action));
     }
 
     /// <summary>
@@ -165,18 +189,16 @@ public abstract partial class ModuleBase : ITypeDiscriminator
     /// <param name="name">The name of the submodule.</param>
     /// <param name="action">The delegate that the submodule should execute.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    protected async Task SubModule(string name, Func<Task> action)
+    protected Task SubModule(string name, Func<Task> action)
     {
-        var submodule = new SubModule(GetType(), name, action);
-
-        OnSubModuleCreated?.Invoke(this, submodule);
-
-        SubModuleBases.Add(submodule);
-
-        await submodule.Task;
+        return SubModule(name, async () =>
+        {
+            await action();
+            return 0;
+        });
     }
 
-    protected EventHandler? OnInitialised { get; set; }
+    protected EventHandler? OnInitialised { get; set; } 
 }
 
 /// <summary>
@@ -186,6 +208,11 @@ public abstract partial class ModuleBase : ITypeDiscriminator
 public abstract class ModuleBase<T> : ModuleBase
 {
     internal readonly TaskCompletionSource<ModuleResult<T>> ModuleResultTaskCompletionSource = new();
+
+    internal override void TryCancel()
+    {
+        ModuleResultTaskCompletionSource.TrySetCanceled();
+    }
 
     internal abstract IHistoryHandler<T> HistoryHandler { get; }
 

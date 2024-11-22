@@ -1,18 +1,9 @@
-using TUnit.Core.Interfaces;
-
 namespace ModularPipelines.UnitTests.Attributes;
 
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public class WindowsOnlyTestAttribute : Attribute, ITestAttribute
+public class WindowsOnlyTestAttribute() : SkipAttribute("Windows only test")
 {
-    /// <inheritdoc/>
-    public Task ApplyToTest(TestContext testContext)
+    public override Task<bool> ShouldSkip(BeforeTestContext context)
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            testContext.SkipTest("Windows only test");
-        }
-
-        return Task.CompletedTask;
+        return Task.FromResult(!OperatingSystem.IsWindows());
     }
 }

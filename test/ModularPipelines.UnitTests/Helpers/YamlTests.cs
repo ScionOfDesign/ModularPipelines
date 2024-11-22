@@ -1,6 +1,5 @@
 using ModularPipelines.Context;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace ModularPipelines.UnitTests.Helpers;
@@ -13,7 +12,7 @@ public class YamlTests : TestBase
         var yaml = await GetService<IYaml>();
 
         var result = yaml.ToYaml(new YamlModel { Foo = "Bar!", Hello = "World!" });
-        await Assert.That(result.Trim()).Is.EqualTo("""
+        await Assert.That(result.Trim()).IsEqualTo("""
                                        foo: Bar!
                                        hello: World!
                                        """);
@@ -28,9 +27,9 @@ public class YamlTests : TestBase
         {
             Foo = "Bar!",
             Hello = "World!",
-            Items = new List<string> { "One", "Two", "3" },
+            Items = ["One", "Two", "3"],
         });
-        await Assert.That(result.Trim()).Is.EqualTo("""
+        await Assert.That(result.Trim()).IsEqualTo("""
                                               foo: Bar!
                                               hello: World!
                                               items:
@@ -47,7 +46,7 @@ public class YamlTests : TestBase
 
         var result = yaml.ToYaml(new YamlModel { Foo = "Bar!", Hello = "World!" },
             PascalCaseNamingConvention.Instance);
-        await Assert.That(result.Trim()).Is.EqualTo("""
+        await Assert.That(result.Trim()).IsEqualTo("""
                                        Foo: Bar!
                                        Hello: World!
                                        """);
@@ -62,7 +61,7 @@ public class YamlTests : TestBase
                                               foo: Bar!
                                               hello: World!
                                               """);
-        await Assert.That(result).Is.EqualTo(new YamlModel { Foo = "Bar!", Hello = "World!" });
+        await Assert.That(result).IsEqualTo(new YamlModel { Foo = "Bar!", Hello = "World!" });
     }
 
     [Test]
@@ -74,7 +73,7 @@ public class YamlTests : TestBase
                                               foo: Bar!
                                               hello: World!
                                               """, CamelCaseNamingConvention.Instance);
-        await Assert.That(result).Is.EqualTo(new YamlModel { Foo = "Bar!", Hello = "World!" });
+        await Assert.That(result).IsEqualTo(new YamlModel { Foo = "Bar!", Hello = "World!" });
     }
 
     private record YamlModel

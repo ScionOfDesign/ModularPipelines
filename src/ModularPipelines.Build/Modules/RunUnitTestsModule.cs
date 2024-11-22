@@ -11,7 +11,6 @@ using Polly.Retry;
 namespace ModularPipelines.Build.Modules;
 
 [DependsOn<CodeFormattedNicelyModule>]
-[DependsOn<PackProjectsModule>]
 public class RunUnitTestsModule : Module<CommandResult[]>
 {
     protected override AsyncRetryPolicy<CommandResult[]?> RetryPolicy => CreateRetryPolicy(0);
@@ -23,21 +22,23 @@ public class RunUnitTestsModule : Module<CommandResult[]>
             .GetFiles(file => file.Path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
                               && file.Path.Contains("UnitTests", StringComparison.OrdinalIgnoreCase))
             .ToAsyncProcessorBuilder()
-            .SelectAsync(async unitTestProjectFile => await context.DotNet().Test(new DotNetTestOptions
+            .SelectAsync(async unitTestProjectFile => await context.DotNet().Run(new DotNetRunOptions
             {
-                ProjectSolutionDirectoryDllExe = unitTestProjectFile.Path,
-                Collect = "XPlat Code Coverage",
+                Project = unitTestProjectFile.Path,
                 NoBuild = true,
+                Framework = "net8.0",
+                Arguments = ["--coverage", "--coverage-output-format", "cobertura", "--fail-fast"],
                 Configuration = Configuration.Release,
                 EnvironmentVariables = new Dictionary<string, string?>
                 {
                     ["GITHUB_ACTIONS"] = null,
+                    ["GITHUB_STEP_SUMMARY"] = null,
                 },
-                Properties = new KeyValue[]
-                {
+                Properties =
+                [
                     new("RunAnalyzersDuringBuild", "false"),
-                    new("RunAnalyzers", "false"),
-                },
+                    new("RunAnalyzers", "false")
+                ],
             }, cancellationToken))
             .ProcessInParallel();
     }

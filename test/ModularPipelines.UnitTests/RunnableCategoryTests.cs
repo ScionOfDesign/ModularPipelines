@@ -2,7 +2,6 @@ using ModularPipelines.Attributes;
 using ModularPipelines.Context;
 using ModularPipelines.Modules;
 using ModularPipelines.TestHelpers;
-using TUnit.Assertions.Extensions;
 using Status = ModularPipelines.Enums.Status;
 
 namespace ModularPipelines.UnitTests;
@@ -75,15 +74,15 @@ public class RunnableCategoryTests : TestBase
             .RunCategories("Run1", "Run2")
             .ExecutePipelineAsync();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(pipelineSummary.GetModule<RunnableModule1>().Status).Is.EqualTo(Status.Successful);
-            Assert.That(pipelineSummary.GetModule<RunnableModule2>().Status).Is.EqualTo(Status.Successful);
-            Assert.That(pipelineSummary.GetModule<RunnableModule3>().Status).Is.EqualTo(Status.Successful);
-            Assert.That(pipelineSummary.GetModule<NonRunnableModule1>().Status).Is.EqualTo(Status.Skipped);
-            Assert.That(pipelineSummary.GetModule<NonRunnableModule2>().Status).Is.EqualTo(Status.Skipped);
-            Assert.That(pipelineSummary.GetModule<OtherModule3>().Status).Is.EqualTo(Status.Skipped);
-        });
+            await Assert.That(pipelineSummary.GetModule<RunnableModule1>().Status).IsEqualTo(Status.Successful);
+            await Assert.That(pipelineSummary.GetModule<RunnableModule2>().Status).IsEqualTo(Status.Successful);
+            await Assert.That(pipelineSummary.GetModule<RunnableModule3>().Status).IsEqualTo(Status.Successful);
+            await Assert.That(pipelineSummary.GetModule<NonRunnableModule1>().Status).IsEqualTo(Status.Skipped);
+            await Assert.That(pipelineSummary.GetModule<NonRunnableModule2>().Status).IsEqualTo(Status.Skipped);
+            await Assert.That(pipelineSummary.GetModule<OtherModule3>().Status).IsEqualTo(Status.Skipped);
+        }
     }
 
     [Test]
@@ -99,14 +98,14 @@ public class RunnableCategoryTests : TestBase
             .IgnoreCategories("NoRun1", "NoRun2")
             .ExecutePipelineAsync();
         
-        await Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(pipelineSummary.GetModule<RunnableModule1>().Status).Is.EqualTo(Status.Successful);
-            Assert.That(pipelineSummary.GetModule<RunnableModule2>().Status).Is.EqualTo(Status.Successful);
-            Assert.That(pipelineSummary.GetModule<RunnableModule3>().Status).Is.EqualTo(Status.Successful);
-            Assert.That(pipelineSummary.GetModule<NonRunnableModule1>().Status).Is.EqualTo(Status.Skipped);
-            Assert.That(pipelineSummary.GetModule<NonRunnableModule2>().Status).Is.EqualTo(Status.Skipped);
-            Assert.That(pipelineSummary.GetModule<OtherModule3>().Status).Is.EqualTo(Status.Successful);
-        });
+            await Assert.That(pipelineSummary.GetModule<RunnableModule1>().Status).IsEqualTo(Status.Successful);
+            await Assert.That(pipelineSummary.GetModule<RunnableModule2>().Status).IsEqualTo(Status.Successful);
+            await Assert.That(pipelineSummary.GetModule<RunnableModule3>().Status).IsEqualTo(Status.Successful);
+            await Assert.That(pipelineSummary.GetModule<NonRunnableModule1>().Status).IsEqualTo(Status.Skipped);
+            await Assert.That(pipelineSummary.GetModule<NonRunnableModule2>().Status).IsEqualTo(Status.Skipped);
+            await Assert.That(pipelineSummary.GetModule<OtherModule3>().Status).IsEqualTo(Status.Successful);
+        }
     }
 }
