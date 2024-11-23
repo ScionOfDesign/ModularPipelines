@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+	<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <Description>Helpers for interacting with Terraform CLI.</Description>
   </PropertyGroup>
 
