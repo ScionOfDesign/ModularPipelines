@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <ModularPipelineReadMeDescription>The base package for Modular Pipelines. This contains the framework for building, executing, controlling and reporting your modules.</ModularPipelineReadMeDescription>
