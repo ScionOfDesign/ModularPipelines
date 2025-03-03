@@ -1,6 +1,6 @@
 namespace ModularPipelines.Engine;
 
-internal interface IUnusedModuleDetector
+public interface IUnusedModuleDetector
 {
     void Log();
 }
